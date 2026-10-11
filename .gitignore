@@ -1,0 +1,19 @@
+# build output
+bin/
+obj/
+*.dll
+*.pdb
+__pycache__/
+bridge_status.txt
+# game assets extracted from Dota 2 / CS2 are never committed (Valve property)
+*.vpk
+*.zip
+*.dmx
+*.fbx
+*.glb
+*.obj
+*.png
+*.tga
+*.wav
+*.mp3
+*_c

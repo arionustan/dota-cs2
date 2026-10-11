@@ -1,0 +1,18 @@
+"DOTAAbilities"
+{
+	// CS weapon lying on the ground
+	"item_cs_weapon"
+	{
+		"BaseClass"				"item_lua"
+		"ScriptFile"			"items/item_cs_weapon"
+		"AbilityBehavior"		"DOTA_ABILITY_BEHAVIOR_PASSIVE"
+		"AbilityTextureName"	"item_rapier"
+		"ID"					"3001"
+		"ItemCost"				"0"
+		"ItemPurchasable"		"0"
+		"ItemSellable"			"0"
+		"ItemKillable"			"0"
+		"ItemDroppable"			"1"
+		"ItemShareability"		"ITEM_FULLY_SHAREABLE"
+	}
+}

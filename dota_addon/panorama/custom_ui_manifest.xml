@@ -1,0 +1,6 @@
+<root>
+    <Panel>
+        <CustomUIElement type="Hud" layoutfile="file://{resources}/layout/custom_game/cs_hud.xml" />
+        <CustomUIElement type="HeroSelection" layoutfile="file://{resources}/layout/custom_game/cs_pick.xml" />
+    </Panel>
+</root>

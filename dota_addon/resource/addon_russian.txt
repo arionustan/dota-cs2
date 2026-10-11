@@ -1,0 +1,11 @@
+"lang"
+{
+	"Language"		"Russian"
+	"Tokens"
+	{
+		"npc_cs_proxy"					"Ксник (КС2)"
+		"addon_game_name"					"DotaCS"
+		"DOTA_Tooltip_ability_item_cs_weapon"		"Оружие (КС)"
+		"DOTA_Tooltip_ability_cs_grenade"		"Гранаты"
+	}
+}

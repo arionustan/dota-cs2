@@ -1,0 +1,14 @@
+"DOTAAbilities"
+{
+	"Version"		"1"
+
+	// Hidden ability that lets CS players throw grenades as projectiles
+	"cs_grenade"
+	{
+		"BaseClass"				"ability_lua"
+		"ScriptFile"			"abilities/cs_grenade"
+		"AbilityBehavior"		"DOTA_ABILITY_BEHAVIOR_PASSIVE | DOTA_ABILITY_BEHAVIOR_HIDDEN | DOTA_ABILITY_BEHAVIOR_NOT_LEARNABLE"
+		"AbilityTextureName"	"alchemist_unstable_concoction"
+		"MaxLevel"				"1"
+	}
+}

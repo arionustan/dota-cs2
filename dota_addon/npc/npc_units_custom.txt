@@ -1,0 +1,37 @@
+"DOTAUnits"
+{
+	"Version"	"1"
+
+	// A CS2 player shown in Dota. Its position comes from CS2, its HP is the CS2 HP.
+	// Dota abilities hit it normally; the damage, stuns and pushes are sent back to CS2.
+	"npc_cs_proxy"
+	{
+		"BaseClass"					"npc_dota_creature"
+		"Model"						"models/heroes/sniper/sniper.vmdl"
+		"ModelScale"				"1"
+		"Level"						"1"
+		"ConsideredHero"			"1"
+		"SoundSet"					"Hero_Sniper"
+
+		"AttackCapabilities"		"DOTA_UNIT_CAP_NO_ATTACK"
+		"MovementCapabilities"		"DOTA_UNIT_CAP_MOVE_GROUND"
+		"MovementSpeed"				"300"
+
+		"StatusHealth"				"100"
+		"StatusHealthRegen"			"0"
+		"StatusMana"				"0"
+		"ArmorPhysical"				"0"
+		"MagicalResistance"			"0"
+
+		"BountyXP"					"100"
+		"BountyGoldMin"				"300"
+		"BountyGoldMax"				"300"
+
+		"RingRadius"				"40"
+		"HealthBarOffset"			"200"
+		"VisionDaytimeRange"		"600"
+		"VisionNighttimeRange"		"600"
+
+		"UnitRelationshipClass"		"DOTA_NPC_UNIT_RELATIONSHIP_TYPE_DEFAULT"
+	}
+}

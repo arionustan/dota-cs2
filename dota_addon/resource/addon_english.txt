@@ -1,0 +1,11 @@
+"lang"
+{
+	"Language"		"English"
+	"Tokens"
+	{
+		"npc_cs_proxy"					"CS2 player"
+		"addon_game_name"					"DotaCS"
+		"DOTA_Tooltip_ability_item_cs_weapon"		"Weapon (CS)"
+		"DOTA_Tooltip_ability_cs_grenade"		"Grenades"
+	}
+}

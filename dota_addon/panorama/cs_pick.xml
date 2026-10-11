@@ -1,0 +1,33 @@
+<root>
+    <styles>
+        <include src="file://{resources}/styles/custom_game/cs_pick.css" />
+    </styles>
+    <scripts>
+        <include src="file://{resources}/scripts/custom_game/cs_pick.js" />
+    </scripts>
+
+    <Panel hittest="false" class="CSPickRoot">
+        <Panel id="CSPickBox">
+            <Label class="CSPickTitle" text="DOTA × CS" />
+
+            <Label class="CSPickHeader" text="РЕЖИМ" />
+            <Panel class="CSPickRow">
+                <Button id="CSModeVersus" class="CSPickButton"><Label text="Дотеры против ксников" /></Button>
+                <Button id="CSModeMixed" class="CSPickButton"><Label text="Смешанный" /></Button>
+            </Panel>
+            <Label id="CSModeHint" class="CSPickHint" text="" />
+
+            <Panel id="CSRoleBlock">
+                <Label class="CSPickHeader" text="ТЫ ИГРАЕШЬ ЗА" />
+                <Panel class="CSPickRow">
+                    <Button id="CSRoleCS" class="CSPickButton"><Label text="Ксника" /></Button>
+                    <Button id="CSRoleDota" class="CSPickButton"><Label text="Дотера" /></Button>
+                </Panel>
+            </Panel>
+            <Label id="CSMyRole" class="CSPickHint" text="" />
+
+            <Label class="CSPickHeader" text="КСНИКИ" />
+            <Label id="CSPlayersCS" class="CSPickList" text="-" />
+        </Panel>
+    </Panel>
+</root>

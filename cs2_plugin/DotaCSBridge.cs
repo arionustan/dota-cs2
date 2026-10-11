@@ -1,0 +1,706 @@
+// DotaCS bridge plugin for a CS2 server (CounterStrikeSharp).
+//
+// Every 0.05s:
+//   sends   P slot x y z fx fy isBot hp          for every alive human CS player
+//           D heroId damage attackerSlot weapon  when a CS player shot a Dota hero bot
+//   gets    H heroId x y z fx fy hp maxhp alive name   Dota heroes -> moved CS bots
+//           C T slot x y     teleport a CS player (hook, push)
+//           C S slot sec     freeze a CS player (stun, root)
+//           C K slot dmg [killer]   damage a CS player (killer = Dota hero name, for the kill message)
+//           C H slot heroId  draw the meat hook chain from the hero to the CS player
+//           E K hero killer weapon  a CS player killed a Dota hero (score + message)
+//
+// Dota heroes are CS bots on the T side that stand still (bot_stop 1) and are
+// teleported every tick to where the hero is in Dota. They never die in CS:
+// their health is reset every tick, the real HP lives in Dota.
+
+using System.Collections.Concurrent;
+using System.Globalization;
+using System.Text;
+using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Timers;
+using CounterStrikeSharp.API.Modules.Utils;
+using Microsoft.Extensions.Logging;
+
+namespace DotaCSBridge;
+
+public partial class DotaCSBridge : BasePlugin
+{
+    public override string ModuleName => "DotaCS Bridge";
+    public override string ModuleVersion => "0.12.0";
+
+    private const string BridgeUrl = "http://127.0.0.1:3000/cs";
+    private const float Interval = 0.05f;
+    private const int BotHealth = 1000;
+    private const float FloorZ = 64f;                                // fallback floor height
+    private const string PudgeModel = "models/dota_pudge/pudge.vmdl";
+    private readonly Dictionary<string, CDynamicProp> _heroProp = new(); // heroId -> Pudge model following the bot
+    private readonly Dictionary<string, string> _heroAnim = new();       // heroId -> current animation
+    private readonly Dictionary<string, Vector> _heroLastPos = new();
+    private readonly Dictionary<string, float> _heroMoveTime = new();
+    private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+    private static readonly HttpClient Http = new(new HttpClientHandler { UseProxy = false })
+    {
+        Timeout = TimeSpan.FromSeconds(1)
+    };
+
+    private record HeroState(string Id, float X, float Y, float Z, float Fx, float Fy, int Hp, int MaxHp, bool Alive, string Name, string Act, string Effect);
+
+    // filled by the HTTP thread, used on the game thread
+    private readonly ConcurrentQueue<string> _incoming = new();
+    private readonly ConcurrentQueue<string> _hits = new();
+
+    private Dictionary<string, HeroState> _heroes = new();
+    private readonly Dictionary<string, int> _heroBot = new();      // heroId -> bot slot
+    private readonly Dictionary<int, float> _frozenUntil = new();   // CS player slot -> time
+    private float _lastBotAdd;
+
+    private int _inFlight;
+    private int _sendFails;
+    private int _readFails;
+    private bool _connected;
+
+    public override void Load(bool hotReload)
+    {
+        Logger.LogInformation("DotaCS bridge plugin {Version} loaded, sending to {Url}", ModuleVersion, BridgeUrl);
+        RegisterEventHandler<EventPlayerHurt>(OnPlayerHurt);
+        RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
+        RegisterEventHandler<EventBulletImpact>(OnBulletImpact);
+        RegisterEventHandler<EventHegrenadeDetonate>(OnHeDetonate);
+        RegisterEventHandler<EventPlayerDeath>((ev, _) => { if (ev.Userid != null && ev.Userid.IsValid && !ev.Userid.IsBot) PlayStinger("killed"); return HookResult.Continue; });
+        AddCommandListener("buy", OnBuy);
+        AddCommandListener("autobuy", OnBuy);
+        AddCommandListener("rebuy", OnBuy);
+        RegisterListener<Listeners.OnMapStart>(_ => SetupServer());
+        RegisterListener<Listeners.OnServerPrecacheResources>(m => { m.AddResource(PudgeModel); PrecacheExtra(m); });
+        AddTimer(Interval, Tick, TimerFlags.REPEAT);
+        AddTimer(30f, SetupServer, TimerFlags.REPEAT);   // keep the settings even if a config resets them
+        SetupServer();
+    }
+
+    private void SetupServer()
+    {
+        // bots only exist as Dota heroes: they stand still and don't shoot
+        Server.ExecuteCommand("bot_quota_mode normal");
+        Server.ExecuteCommand("bot_stop 1");
+        Server.ExecuteCommand("bot_join_after_player 0");
+        // test server: never kick idle players, endless warmup, instant respawn
+        Server.ExecuteCommand("mp_autokick 0");
+        Server.ExecuteCommand("mp_warmup_pausetimer 1");
+        Server.ExecuteCommand("mp_ignore_round_win_conditions 1");
+        Server.ExecuteCommand("mp_respawn_on_death_ct 1");
+        Server.ExecuteCommand("mp_respawn_on_death_t 1");
+        // buying works anywhere for the engine, the plugin only allows it at the Dire fountain
+        Server.ExecuteCommand("mp_buy_anywhere 1");
+        Server.ExecuteCommand("mp_buytime 999999");
+        Server.ExecuteCommand("sv_hibernate_when_empty 0");
+        // test mode: cheats on (noclip, god...). Remove before giving the game to the streamer
+        Server.ExecuteCommand("sv_cheats 1");
+    }
+
+    // ------------------------------------------------------------ CS player shot a hero bot
+    private HookResult OnPlayerHurt(EventPlayerHurt ev, GameEventInfo info)
+    {
+        try
+        {
+            var victim = ev.Userid;
+            var attacker = ev.Attacker;
+            if (victim == null || attacker == null || !victim.IsValid || !attacker.IsValid) return HookResult.Continue;
+            if (!victim.IsBot || attacker.IsBot) return HookResult.Continue;
+
+            var heroId = _heroBot.FirstOrDefault(kv => kv.Value == victim.Slot).Key;
+            if (heroId == null) return HookResult.Continue;
+
+            _hits.Enqueue(string.Format(Inv, "D {0} {1} {2} {3}", heroId, ev.DmgHealth, attacker.Slot, ev.Weapon));
+        }
+        catch (Exception e)
+        {
+            Logger.LogWarning("DotaCS hurt handler: {Error}", e.Message);
+        }
+        return HookResult.Continue;
+    }
+
+    // ------------------------------------------------------------ main loop (game thread)
+    private void Tick()
+    {
+        try
+        {
+            ApplyIncoming();
+            SyncBots();
+            SyncUnits();
+            UpdateTrees();
+            UpdateBuildingProps();
+            UpdateHookThrows();
+            UpdateAmbient();
+            UpdateFreezes();
+            UpdateHooks();
+            UpdateCsPlayers();
+            UpdateTracers();
+        }
+        catch (Exception e)
+        {
+            _readFails++;
+            if (_readFails == 1 || _readFails % 400 == 0)
+                Logger.LogWarning("DotaCS tick error ({Count}x): {Error}", _readFails, e.Message);
+        }
+
+        if (Volatile.Read(ref _inFlight) != 0) return;
+
+        string body;
+        try
+        {
+            body = BuildBody();
+        }
+        catch (Exception e)
+        {
+            _readFails++;
+            if (_readFails == 1 || _readFails % 400 == 0)
+                Logger.LogWarning("DotaCS could not read players ({Count}x): {Error}", _readFails, e.Message);
+            return;
+        }
+
+        Interlocked.Exchange(ref _inFlight, 1);
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var content = new StringContent(body, Encoding.UTF8, "text/plain");
+                using var response = await Http.PostAsync(BridgeUrl, content);
+                var text = await response.Content.ReadAsStringAsync();
+                _incoming.Enqueue(text);
+                if (!_connected)
+                {
+                    _connected = true;
+                    Logger.LogInformation("DotaCS connected to the bridge (HTTP {Code})", (int)response.StatusCode);
+                }
+            }
+            catch (Exception e)
+            {
+                _connected = false;
+                _sendFails++;
+                if (_sendFails == 1 || _sendFails % 200 == 0)
+                    Logger.LogWarning("DotaCS bridge not reachable ({Count}x), is bridge.py running? {Error}", _sendFails, e.Message);
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _inFlight, 0);
+            }
+        });
+    }
+
+    private string BuildBody()
+    {
+        var sb = new StringBuilder();
+        foreach (var player in Utilities.GetPlayers())
+        {
+            if (player == null || !player.IsValid || player.IsBot || !player.PawnIsAlive) continue;
+            var pawn = player.PlayerPawn.Value;
+            if (pawn == null || !pawn.IsValid) continue;
+            var pos = pawn.AbsOrigin;
+            if (pos == null) continue;
+
+            double yaw = pawn.EyeAngles.Y * Math.PI / 180.0;
+            sb.AppendLine(string.Format(Inv, "P {0} {1:F1} {2:F1} {3:F1} {4:F3} {5:F3} 0 {6} {7}",
+                player.Slot, pos.X, pos.Y, pos.Z, Math.Cos(yaw), Math.Sin(yaw), pawn.Health, Safe(player.PlayerName)));
+        }
+        while (_hits.TryDequeue(out var hit)) sb.AppendLine(hit);
+        return sb.Length > 0 ? sb.ToString() : "none";
+    }
+
+    // ------------------------------------------------------------ answers from the bridge
+    private void ApplyIncoming()
+    {
+        string? latest = null;
+        var commands = new List<string>();
+        while (_incoming.TryDequeue(out var text))
+        {
+            latest = text;
+            foreach (var line in text.Split('\n'))
+                if (line.StartsWith("C ") || line.StartsWith("E ")) commands.Add(line.Trim());
+        }
+        if (latest == null) return;
+
+        var heroes = new Dictionary<string, HeroState>();
+        foreach (var raw in latest.Split('\n'))
+        {
+            var p = raw.Trim().Split(' ');
+            // H heroId x y z fx fy hp maxhp alive name
+            if (p.Length < 11 || p[0] != "H") continue;
+            heroes[p[1]] = new HeroState(p[1], F(p[2]), F(p[3]), F(p[4]), F(p[5]), F(p[6]),
+                (int)F(p[7]), (int)F(p[8]), p[9] == "1", p[10], p.Length > 11 ? p[11] : "-", p.Length > 12 ? p[12] : "-");
+        }
+        _heroes = heroes;
+        ParseUnits(latest);
+        ParseBuildings(latest);
+
+        foreach (var cmd in commands)
+        {
+            var parts = cmd.Split(' ');
+            if (parts[0] == "E") ApplyEvent(parts); else ApplyCommand(parts);
+        }
+    }
+
+    private void ApplyCommand(string[] c)
+    {
+        if (c.Length < 4) return;
+        var player = PlayerBySlot((int)F(c[2]));
+        var pawn = player?.PlayerPawn.Value;
+        if (player == null || pawn == null || !pawn.IsValid || !player.PawnIsAlive) return;
+
+        switch (c[1])
+        {
+            case "T" when c.Length >= 5:
+                var z = pawn.AbsOrigin?.Z ?? 0;
+                pawn.Teleport(new Vector(F(c[3]), F(c[4]), c.Length > 5 ? F(c[5]) + 8 : z + 2), null, new Vector(0, 0, 0));
+                break;
+
+            case "S":
+                var until = Server.CurrentTime + F(c[3]);
+                if (!_frozenUntil.TryGetValue(player.Slot, out var old) || old < until)
+                    _frozenUntil[player.Slot] = until;
+                SetFrozen(pawn, true);
+                break;
+
+            case "V" when c.Length >= 4:
+                // Dota slow (rot, frost...): keep the CS player's speed scaled while Dota says so
+                pawn.VelocityModifier = Math.Clamp(F(c[3]), 0.1f, 1f);
+                Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_flVelocityModifier");
+                break;
+
+            case "R" when c.Length >= 6:
+                // a tower / fountain / creep shot at this CS player: draw a short tracer
+                DrawTracer(new Vector(F(c[3]), F(c[4]), F(c[5]) + 120), pawn);
+                break;
+
+            case "H" when c.Length >= 4:
+                DrawHook(c[3], pawn);
+                break;
+
+            case "K":
+                var dmg = (int)Math.Ceiling(F(c[3]));
+                if (dmg <= 0) break;
+                if (pawn.Health - dmg <= 0)
+                {
+                    var killer = c.Length > 4 ? Pretty(c[4]) : "Дота";
+                    pawn.CommitSuicide(false, true);
+                    _dotaScore++;
+                    Announce($" {ChatColors.Red}{killer}{ChatColors.Default} убил {ChatColors.Blue}{player.PlayerName}{ChatColors.Default} из Доты");
+                    player.PrintToCenterHtml($"<font color='#ff4040'>Тебя убил {killer} из Доты</font>");
+                    CheckWin();
+                }
+                else
+                {
+                    pawn.Health -= dmg;
+                    Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
+                }
+                break;
+        }
+    }
+
+    private void UpdateFreezes()
+    {
+        foreach (var slot in _frozenUntil.Keys.ToList())
+        {
+            if (Server.CurrentTime < _frozenUntil[slot]) continue;
+            _frozenUntil.Remove(slot);
+            var pawn = PlayerBySlot(slot)?.PlayerPawn.Value;
+            if (pawn != null && pawn.IsValid) SetFrozen(pawn, false);
+        }
+    }
+
+    private static void SetFrozen(CCSPlayerPawn pawn, bool frozen)
+    {
+        var type = frozen ? MoveType_t.MOVETYPE_NONE : MoveType_t.MOVETYPE_WALK;
+        if (pawn.MoveType == type) return;
+        pawn.MoveType = type;
+        pawn.ActualMoveType = type;
+        Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
+        if (frozen) pawn.Teleport(null, null, new Vector(0, 0, 0));
+    }
+
+    // ------------------------------------------------------------ Dota heroes as CS bots
+    private void SyncBots()
+    {
+        var bots = Utilities.GetPlayers().Where(p => p != null && p.IsValid && p.IsBot).ToList();
+        var botBySlot = bots.ToDictionary(b => b.Slot);
+
+        // forget heroes that are gone or whose bot left
+        foreach (var id in _heroBot.Keys.ToList())
+            if (!_heroes.ContainsKey(id) || !botBySlot.ContainsKey(_heroBot[id]))
+                _heroBot.Remove(id);
+        foreach (var id in _heroProp.Keys.ToList())
+            if (!_heroes.ContainsKey(id)) RemoveProp(id);
+
+        // give free bots to heroes without one
+        var used = _heroBot.Values.ToHashSet();
+        var free = new Queue<CCSPlayerController>(bots.Where(b => !used.Contains(b.Slot)));
+        foreach (var hero in _heroes.Values)
+        {
+            if (_heroBot.ContainsKey(hero.Id)) continue;
+            if (free.Count > 0) _heroBot[hero.Id] = free.Dequeue().Slot;
+        }
+
+        // need more bots? add one at a time
+        var missing = _heroes.Count - _heroBot.Count;
+        if (missing > 0 && Server.CurrentTime - _lastBotAdd > 1.0f)
+        {
+            _lastBotAdd = Server.CurrentTime;
+            Server.ExecuteCommand("bot_add_t");
+        }
+        // too many bots? kick spare ones
+        else if (free.Count > 0 && _heroes.Count > 0 && Server.CurrentTime - _lastBotAdd > 1.0f)
+        {
+            _lastBotAdd = Server.CurrentTime;
+            var spare = free.Dequeue();
+            Server.ExecuteCommand("kickid " + spare.UserId);
+        }
+
+        // move every hero bot to its hero
+        foreach (var (heroId, slot) in _heroBot)
+        {
+            var bot = botBySlot[slot];
+            var hero = _heroes[heroId];
+            var pawn = bot.PlayerPawn.Value;
+
+            var shownName = $"{hero.Name} {Math.Max(hero.Hp, 0)}/{hero.MaxHp}";
+            if (bot.PlayerName != shownName)
+            {
+                bot.PlayerName = shownName;
+                Utilities.SetStateChanged(bot, "CBasePlayerController", "m_iszPlayerName");
+            }
+            if (pawn == null || !pawn.IsValid) continue;
+            if (!bot.PawnIsAlive) { bot.Respawn(); continue; }
+
+            CDynamicProp? prop = null;
+            if (UsePudgeModel) { HideBot(bot, pawn); prop = PropFor(heroId); }
+            var heroPos = new Vector(hero.X, hero.Y, hero.Z);
+            var yaw = (float)(Math.Atan2(hero.Fy, hero.Fx) * 180.0 / Math.PI);
+
+            if (!hero.Alive)
+            {
+                // dead in Dota: Pudge plays his death animation where he fell, the hitbox goes under the map
+                SetAnim(heroId, prop, "death");
+                pawn.Teleport(new Vector(hero.X, hero.Y, hero.Z - 3000), null, new Vector(0, 0, 0));
+                continue;
+            }
+
+            // the bot is the hitbox, the Pudge model is what you see
+            var z = hero.Z;
+            if (Math.Abs(z) < 0.01f)
+            {
+                // Dota sends no heights (flat arena): keep the bot on the floor
+                z = pawn.AbsOrigin?.Z ?? FloorZ;
+                if (z < FloorZ - 100 || z > FloorZ + 400) z = FloorZ + 16;
+            }
+            pawn.Teleport(new Vector(hero.X, hero.Y, z + 4), new QAngle(0, yaw, 0), new Vector(0, 0, 0));
+            if (prop != null)
+            {
+                prop.Teleport(new Vector(hero.X, hero.Y, z), new QAngle(0, yaw + PudgeYawOffset, 0), null);
+                if (_heroLastPos.TryGetValue(heroId, out var last) &&
+                    Math.Abs(hero.X - last.X) + Math.Abs(hero.Y - last.Y) > 1f)
+                    _heroMoveTime[heroId] = Server.CurrentTime;
+                var moving = _heroMoveTime.TryGetValue(heroId, out var mt) && Server.CurrentTime - mt < 0.25f;
+                var anim = hero.Act switch
+                {
+                    "hook" => "hook",
+                    "cast" => "hook",
+                    "ult" => "ult",
+                    "stun" => "stun",
+                    "attack" => "attack",
+                    _ => moving ? "run" : "idle",
+                };
+                SetAnim(heroId, prop, anim);
+                UpdateRot(heroId, hero, prop);
+            }
+            _heroLastPos[heroId] = heroPos;
+
+            // never die in CS, Dota owns the HP
+            if (pawn.Health != BotHealth)
+            {
+                pawn.Health = BotHealth;
+                Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
+            }
+        }
+    }
+
+    // ------------------------------------------------------------ Pudge model
+    private const float PudgeYawOffset = 0f;   // DMX models already face +X like CS
+    private const bool UsePudgeModel = true;
+    private const float PudgeHitboxScale = 1.8f;
+
+    private void HideBot(CCSPlayerController bot, CCSPlayerPawn pawn)
+    {
+        if (pawn.Render.A != 0)
+        {
+            pawn.RenderMode = RenderMode_t.kRenderTransAlpha;
+            pawn.Render = System.Drawing.Color.FromArgb(0, 255, 255, 255);
+            Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_clrRender");
+            bot.RemoveWeapons();
+            // Pudge is ~133 units tall, a CS player ~72: scale the invisible bot so its hitboxes cover the model.
+            try
+            {
+                var node = pawn.CBodyComponent?.SceneNode;
+                if (node != null)
+                {
+                    node.GetSkeletonInstance().Scale = PudgeHitboxScale;
+                    Utilities.SetStateChanged(pawn, "CBaseEntity", "m_CBodyComponent");
+                }
+            }
+            catch (Exception e) { Logger.LogWarning("DotaCS: can't scale the bot: {Error}", e.Message); }
+        }
+    }
+
+    private CDynamicProp? PropFor(string heroId)
+    {
+        if (_heroProp.TryGetValue(heroId, out var prop) && prop.IsValid) return prop;
+        try
+        {
+            prop = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
+            if (prop == null) return null;
+            prop.Collision.SolidType = SolidType_t.SOLID_NONE;
+            prop.DispatchSpawn();
+            prop.SetModel(PudgeModel);
+            SetPropScale(prop, ModelScale);
+            _heroProp[heroId] = prop;
+            _heroAnim.Remove(heroId);
+            return prop;
+        }
+        catch (Exception e)
+        {
+            Logger.LogWarning("DotaCS: can't create the Pudge model: {Error}", e.Message);
+            return null;
+        }
+    }
+
+    private void SetAnim(string heroId, CDynamicProp? prop, string anim)
+    {
+        if (prop == null || !prop.IsValid) return;
+        if (_heroAnim.TryGetValue(heroId, out var cur) && cur == anim) return;
+        _heroAnim[heroId] = anim;
+        prop.AcceptInput("SetAnimation", null, null, anim);
+        prop.AcceptInput("SetDefaultAnimation", null, null, anim == "death" ? "death" : anim);
+        if (anim == "ult" && prop.AbsOrigin != null) StartFx(FxDismember, new Vector(prop.AbsOrigin.X, prop.AbsOrigin.Y, prop.AbsOrigin.Z + 60), 3.5f);
+    }
+
+    private void RemoveProp(string heroId)
+    {
+        if (_heroProp.TryGetValue(heroId, out var prop) && prop.IsValid) prop.Remove();
+        _heroProp.Remove(heroId);
+        _heroAnim.Remove(heroId);
+        _heroLastPos.Remove(heroId);
+    }
+
+    // ------------------------------------------------------------ score, messages, hook chain
+    private const int WinScore = 10;   // first side to this many kills wins the match
+    private int _csScore;
+    private int _dotaScore;
+
+    private void ApplyEvent(string[] e)
+    {
+        // E K hero killer weapon : a CS player killed a Dota hero
+        if (e.Length >= 4 && e[1] == "K")
+        {
+            _csScore++;
+            var weapon = e.Length > 4 ? " (" + e[4] + ")" : "";
+            Announce($" {ChatColors.Blue}{Pretty(e[3])}{ChatColors.Default} убил {ChatColors.Red}{Pretty(e[2])}{ChatColors.Default}{weapon}");
+            foreach (var p in Utilities.GetPlayers())
+                if (p != null && p.IsValid && !p.IsBot)
+                    p.PrintToCenterHtml($"<font color='#40a0ff'>{Pretty(e[2])} убит!</font>");
+            CheckWin();
+        }
+        // E HK heroId x y z dirx diry : Pudge threw his hook
+        if (e.Length >= 8 && e[1] == "HK")
+        {
+            StartHookThrow(F(e[3]), F(e[4]), F(e[5]), F(e[6]), F(e[7]));
+            return;
+        }
+        // E T x y : a tree was cut in Dota
+        else if (e.Length >= 4 && e[1] == "T")
+        {
+            CutTree(F(e[2]), F(e[3]));
+        }
+        // E S event x y z : a Dota sound near a CS player
+        else if (e.Length >= 6 && e[1] == "S")
+        {
+            PlayDotaSound(e[2], new Vector(F(e[3]), F(e[4]), F(e[5]) + 40));
+        }
+    }
+
+    private void CheckWin()
+    {
+        Announce($" Счёт: {ChatColors.Blue}КС {_csScore}{ChatColors.Default} : {ChatColors.Red}{_dotaScore} Дота{ChatColors.Default}  (до {WinScore})");
+        if (_csScore < WinScore && _dotaScore < WinScore) return;
+        var cs = _csScore >= WinScore;
+        PlayStinger(cs ? "dire_win" : "dire_lose");
+        Announce(cs ? $" {ChatColors.Blue}КС ПОБЕДИЛИ!" : $" {ChatColors.Red}ДОТА ПОБЕДИЛА!");
+        foreach (var p in Utilities.GetPlayers())
+            if (p != null && p.IsValid && !p.IsBot)
+                p.PrintToCenterHtml(cs ? "<font color='#40a0ff' class='fontSize-xl'>КС ПОБЕДИЛИ!</font>" : "<font color='#ff4040' class='fontSize-xl'>ДОТА ПОБЕДИЛА!</font>");
+        _csScore = 0;
+        _dotaScore = 0;
+    }
+
+    private static void Announce(string text) => Server.PrintToChatAll(text);
+
+    private static string Pretty(string name)
+    {
+        name = name.Replace('_', ' ');
+        return name.Length > 0 ? char.ToUpper(name[0]) + name.Substring(1) : name;
+    }
+
+    private static string Safe(string? name)
+    {
+        var n = (name ?? "player").Replace(' ', '_').Replace('\n', '_');
+        return n.Length > 0 ? n : "player";
+    }
+
+    private readonly Dictionary<int, CBeam> _hookBeam = new();
+    private readonly Dictionary<int, float> _hookUntil = new();
+
+    // a brown "chain" beam from Pudge's hand to the hooked CS player, refreshed while the hook pulls
+    private void DrawHook(string heroId, CCSPlayerPawn victim)
+    {
+        if (!_heroes.TryGetValue(heroId, out var hero)) return;
+        var slot = victim.Controller.Value?.Index ?? 0;
+        var start = new Vector(hero.X, hero.Y, hero.Z + 80);
+        var vp = victim.AbsOrigin;
+        if (vp == null) return;
+        var end = new Vector(vp.X, vp.Y, vp.Z + 40);
+        try
+        {
+            if (!_hookUntil.ContainsKey((int)slot)) { victim.EmitSound("Weapon_Knife.Hit"); StartFx(FxHookImpact, end, 2f); }
+            DrawChain((int)slot, start, end);
+            _hookUntil[(int)slot] = Server.CurrentTime + 0.2f;
+        }
+        catch (Exception e) { Logger.LogWarning("DotaCS hook chain: {Error}", e.Message); }
+    }
+
+    private void UpdateHooks()
+    {
+        foreach (var slot in _hookUntil.Keys.ToList())
+        {
+            if (Server.CurrentTime < _hookUntil[slot]) continue;
+            _hookUntil.Remove(slot);
+            RemoveChain(slot);
+        }
+    }
+
+    // ------------------------------------------------------------ CS side of the Dota map: Dire spawn, fountain, shop, portals
+    private static readonly Vector[] DireSpawns =
+    {
+        new(6836, 6554, 400), new(6902, 6420, 400), new(7036, 6312, 400), new(7166, 6209, 400), new(7316, 6084, 400),
+    };
+    private static readonly Vector DireFountain = new(7408, 6848, 377);
+    private const float FountainRadius = 1100f;   // heal + shop range
+    private const int FountainHealPerTick = 3;     // every 0.05 s -> 60 HP/s
+    private static readonly Vector[] Portals = { new(-6458, 7599, 256), new(6426, -7314, 256) };
+    private const float PortalRadius = 140f;
+    private const float PortalTime = 2.0f;         // stand this long to teleport
+    private readonly Dictionary<int, float> _portalSince = new();
+    private readonly Dictionary<int, float> _portalCooldown = new();
+    private int _spawnIndex;
+
+    private HookResult OnPlayerSpawn(EventPlayerSpawn ev, GameEventInfo info)
+    {
+        var player = ev.Userid;
+        if (player == null || !player.IsValid || player.IsBot) return HookResult.Continue;
+        AddTimer(0.1f, () =>
+        {
+            var pawn = player.PlayerPawn.Value;
+            if (!player.IsValid || pawn == null || !pawn.IsValid || !player.PawnIsAlive) return;
+            var spot = DireSpawns[_spawnIndex++ % DireSpawns.Length];
+            pawn.Teleport(spot, new QAngle(0, 225, 0), new Vector(0, 0, 0));
+        });
+        return HookResult.Continue;
+    }
+
+    private HookResult OnBuy(CCSPlayerController? player, CommandInfo info)
+    {
+        if (player == null || !player.IsValid || player.IsBot) return HookResult.Continue;
+        var pos = player.PlayerPawn.Value?.AbsOrigin;
+        if (pos != null && Dist2(pos, DireFountain) < FountainRadius * FountainRadius) return HookResult.Continue;
+        player.PrintToCenter("Закупка только на фонтане Тьмы");
+        return HookResult.Handled;
+    }
+
+    private void UpdateCsPlayers()
+    {
+        foreach (var player in Utilities.GetPlayers())
+        {
+            if (player == null || !player.IsValid || player.IsBot || !player.PawnIsAlive) continue;
+            var pawn = player.PlayerPawn.Value;
+            var pos = pawn?.AbsOrigin;
+            if (pawn == null || pos == null) continue;
+
+            // fountain heals
+            if (Dist2(pos, DireFountain) < FountainRadius * FountainRadius && pawn.Health < 100)
+            {
+                pawn.Health = Math.Min(100, pawn.Health + FountainHealPerTick);
+                Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
+            }
+
+            // twin gates: stand on one for 2 s -> appear at the other
+            var slot = player.Slot;
+            var now = Server.CurrentTime;
+            int at = -1;
+            for (int i = 0; i < Portals.Length; i++)
+                if (Dist2(pos, Portals[i]) < PortalRadius * PortalRadius) at = i;
+            if (at < 0 || (_portalCooldown.TryGetValue(slot, out var cd) && now < cd)) { _portalSince.Remove(slot); continue; }
+            if (!_portalSince.TryGetValue(slot, out var since)) { _portalSince[slot] = now; player.PrintToCenter("Портал: стой 2 секунды"); continue; }
+            if (now - since < PortalTime) continue;
+            var dest = Portals[1 - at];
+            var dir = new Vector(-dest.X, -dest.Y, 0);                 // step out towards the map centre
+            var len = (float)Math.Sqrt(dir.X * dir.X + dir.Y * dir.Y);
+            pawn.Teleport(new Vector(dest.X + dir.X / len * 220, dest.Y + dir.Y / len * 220, dest.Z + 40), null, new Vector(0, 0, 0));
+            pawn.EmitSound("Player.Teleport");
+            _portalSince.Remove(slot);
+            _portalCooldown[slot] = now + 3f;
+        }
+    }
+
+    private static float Dist2(Vector a, Vector b) => (a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y);
+
+    private readonly List<(CBeam beam, float until)> _tracers = new();
+
+    private void DrawTracer(Vector from, CCSPlayerPawn victim)
+    {
+        var vp = victim.AbsOrigin;
+        if (vp == null) return;
+        try
+        {
+            var beam = Utilities.CreateEntityByName<CBeam>("beam")!;
+            beam.Render = System.Drawing.Color.FromArgb(255, 255, 200, 80);
+            beam.Width = 2f; beam.EndWidth = 1f;
+            beam.DispatchSpawn();
+            beam.Teleport(from, new QAngle(0, 0, 0), new Vector(0, 0, 0));
+            beam.EndPos.X = vp.X; beam.EndPos.Y = vp.Y; beam.EndPos.Z = vp.Z + 40;
+            Utilities.SetStateChanged(beam, "CBeam", "m_vecEndPos");
+            _tracers.Add((beam, Server.CurrentTime + 0.15f));
+        }
+        catch (Exception e) { Logger.LogWarning("DotaCS tracer: {Error}", e.Message); }
+    }
+
+    private void UpdateTracers()
+    {
+        for (int i = _tracers.Count - 1; i >= 0; i--)
+        {
+            if (Server.CurrentTime < _tracers[i].until) continue;
+            if (_tracers[i].beam.IsValid) _tracers[i].beam.Remove();
+            _tracers.RemoveAt(i);
+        }
+    }
+
+    // ------------------------------------------------------------ helpers
+    private static CCSPlayerController? PlayerBySlot(int slot)
+    {
+        foreach (var p in Utilities.GetPlayers())
+            if (p != null && p.IsValid && p.Slot == slot) return p;
+        return null;
+    }
+
+    private static float F(string s) =>
+        float.TryParse(s, NumberStyles.Float, Inv, out var v) ? v : 0f;
+}

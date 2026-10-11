@@ -1,0 +1,113 @@
+<root>
+    <styles>
+        <include src="file://{resources}/styles/custom_game/cs_hud.css" />
+    </styles>
+    <scripts>
+        <include src="file://{resources}/scripts/custom_game/cs_input.js" />
+    </scripts>
+
+    <Panel hittest="false" class="CSRoot">
+
+        <!-- flashbang white screen -->
+        <Panel id="CSFlash" hittest="false" />
+
+        <!-- crosshair, follows the mouse -->
+        <Panel id="CSCrosshair" hittest="false">
+            <Panel id="CHTop" class="CHLine" hittest="false" />
+            <Panel id="CHBottom" class="CHLine" hittest="false" />
+            <Panel id="CHLeft" class="CHLine" hittest="false" />
+            <Panel id="CHRight" class="CHLine" hittest="false" />
+            <Panel id="CHDot" class="CHLine" hittest="false" />
+        </Panel>
+
+        <!-- kill feed, top right -->
+        <Panel id="CSKillFeed" hittest="false" />
+
+        <!-- everything below is only for CS players -->
+        <Panel id="CSHud" hittest="false" visible="false">
+
+            <!-- bottom left: money, HP, armor -->
+            <Panel id="CSLeft" hittest="false">
+                <Label id="CSMoney" text="$0" />
+                <Panel class="CSStatRow" hittest="false">
+                    <Label class="CSIcon" text="+" />
+                    <Label id="CSHealth" class="CSBigNum" text="100" />
+                    <Panel id="CSHealthBar" hittest="false"><Panel id="CSHealthFill" hittest="false" /></Panel>
+                </Panel>
+                <Panel id="CSArmorRow" class="CSStatRow" hittest="false">
+                    <Label class="CSIcon CSArmorIcon" text="◆" />
+                    <Label id="CSArmor" class="CSBigNum" text="0" />
+                </Panel>
+            </Panel>
+
+            <!-- bottom right: weapon slots and ammo -->
+            <Panel id="CSRight" hittest="false">
+                <Panel id="CSSlots" hittest="false">
+                    <Label id="CSSlot1" class="CSSlot" text="" />
+                    <Label id="CSSlot2" class="CSSlot" text="" />
+                    <Label id="CSSlot3" class="CSSlot" text="" />
+                    <Label id="CSSlot4" class="CSSlot" text="" />
+                </Panel>
+                <Label id="CSWeapon" text="" />
+                <Panel class="CSAmmoRow" hittest="false">
+                    <Label id="CSAmmo" text="" />
+                    <Label id="CSAmmoMag" text="" />
+                </Panel>
+            </Panel>
+
+            <!-- "E pick up" prompt -->
+            <Label id="CSPrompt" hittest="false" text="" />
+
+            <!-- dead -->
+            <Label id="CSDead" hittest="false" text="" />
+
+        </Panel>
+
+        <!-- settings button (for everyone) -->
+        <Button id="CSSettingsButton">
+            <Label text="НАСТРОЙКИ (O)" />
+        </Button>
+
+        <!-- buy menu -->
+        <Panel id="CSShop" visible="false">
+            <Label class="CSShopTitle" text="МЕНЮ ЗАКУПКИ" />
+            <Panel id="CSShopColumns" />
+            <Panel class="CSShopFooter">
+                <Label id="CSShopMoney" text="$0" />
+                <Label id="CSShopMsg" text="" />
+                <Label class="CSShopHint" text="B закрыть" />
+            </Panel>
+        </Panel>
+
+        <!-- settings -->
+        <Panel id="CSSettings" visible="false">
+            <Panel class="CSSettingsHeader">
+                <Label class="CSShopTitle" text="НАСТРОЙКИ" />
+                <Panel class="CSTabs">
+                    <Button id="CSTabCrosshair" class="CSTab Active"><Label text="ПРИЦЕЛ" /></Button>
+                    <Button id="CSTabGame" class="CSTab"><Label text="ИГРА" /></Button>
+                    <Button id="CSTabKeys" class="CSTab"><Label text="УПРАВЛЕНИЕ" /></Button>
+                </Panel>
+            </Panel>
+
+            <Panel id="CSPageCrosshair" class="CSPage">
+                <Panel id="CSCrosshairPreview" hittest="false">
+                    <Panel id="CSPreviewHolder" hittest="false" />
+                </Panel>
+                <Panel id="CSCrosshairOptions" class="CSOptions" />
+            </Panel>
+
+            <Panel id="CSPageGame" class="CSPage CSOptions" visible="false" />
+
+            <Panel id="CSPageKeys" class="CSPage" visible="false">
+                <Label class="CSKeysText" html="true" text="" id="CSKeysText" />
+            </Panel>
+
+            <Panel class="CSShopFooter">
+                <Button id="CSSettingsReset" class="CSSmallButton"><Label text="СБРОСИТЬ" /></Button>
+                <Label class="CSShopHint" text="O закрыть" />
+            </Panel>
+        </Panel>
+
+    </Panel>
+</root>
