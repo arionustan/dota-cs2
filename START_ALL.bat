@@ -111,7 +111,7 @@ start "" "C:\Program Files (x86)\Steam\steamapps\common\dota 2 beta\game\bin\win
 
 echo [4/4] Starting CS2 and joining your server...
 rem -insecure is needed so CS2 accepts the custom map (turn it off before normal matchmaking)
-start "" "C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\game\bin\win64\cs2.exe" -steam -insecure -novid +connect 127.0.0.1:27030
+start "" "C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\game\bin\win64\cs2.exe" -steam -insecure -novid +exec dotacs_binds +connect 127.0.0.1:27030
 
 echo.
 echo Done. You can close this window.

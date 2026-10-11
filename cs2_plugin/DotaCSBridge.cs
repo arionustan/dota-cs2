@@ -29,7 +29,7 @@ namespace DotaCSBridge;
 public partial class DotaCSBridge : BasePlugin
 {
     public override string ModuleName => "DotaCS Bridge";
-    public override string ModuleVersion => "0.12.0";
+    public override string ModuleVersion => "0.12.1";
 
     private const string BridgeUrl = "http://127.0.0.1:3000/cs";
     private const float Interval = 0.05f;
@@ -99,6 +99,13 @@ public partial class DotaCSBridge : BasePlugin
         Server.ExecuteCommand("sv_hibernate_when_empty 0");
         // test mode: cheats on (noclip, god...). Remove before giving the game to the streamer
         Server.ExecuteCommand("sv_cheats 1");
+        // test mode extras: endless ammo, lots of money, more grenades, no freeze time
+        Server.ExecuteCommand("sv_infinite_ammo 1");
+        Server.ExecuteCommand("mp_maxmoney 60000");
+        Server.ExecuteCommand("mp_startmoney 60000");
+        Server.ExecuteCommand("ammo_grenade_limit_total 6");
+        Server.ExecuteCommand("mp_freezetime 0");
+        Server.ExecuteCommand("mp_roundtime 60");
     }
 
     // ------------------------------------------------------------ CS player shot a hero bot
