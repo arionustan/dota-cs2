@@ -47,7 +47,7 @@ Models, textures, sounds and the map belong to **Valve** and are not redistribut
 - [ ] More heroes
 - [ ] Match rules (rounds, economy for CS players)
 - [ ] Online play for friends (public bridge + server)
-- [ ] One-click installer
+- [x] One-click installer (`installer/`, bridge built into the plugin)
 
 ## Credits
 

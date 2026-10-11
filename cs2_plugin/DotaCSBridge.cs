@@ -29,7 +29,7 @@ namespace DotaCSBridge;
 public partial class DotaCSBridge : BasePlugin
 {
     public override string ModuleName => "DotaCS Bridge";
-    public override string ModuleVersion => "0.12.1";
+    public override string ModuleVersion => "0.13.0";
 
     private const string BridgeUrl = "http://127.0.0.1:3000/cs";
     private const float Interval = 0.05f;
@@ -79,7 +79,10 @@ public partial class DotaCSBridge : BasePlugin
         AddTimer(Interval, Tick, TimerFlags.REPEAT);
         AddTimer(30f, SetupServer, TimerFlags.REPEAT);   // keep the settings even if a config resets them
         SetupServer();
+        StartRelay();
     }
+
+    public override void Unload(bool hotReload) => StopRelay();
 
     private void SetupServer()
     {
@@ -168,6 +171,8 @@ public partial class DotaCSBridge : BasePlugin
                 Logger.LogWarning("DotaCS could not read players ({Count}x): {Error}", _readFails, e.Message);
             return;
         }
+
+        if (_relayOn) { RelayExchangeCs(body); return; }
 
         Interlocked.Exchange(ref _inFlight, 1);
         _ = Task.Run(async () =>
