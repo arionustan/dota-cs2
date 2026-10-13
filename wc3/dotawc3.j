@@ -171,7 +171,7 @@ function DWC_Exchange takes nothing returns nothing
     local string tok
     local integer seq
     local real hp
-    set udg_dwc_time = udg_dwc_time + 0.1
+    set udg_dwc_time = udg_dwc_time + 0.15
     // ---- read what the bridge wrote
     call BlzSetAbilityTooltip('AHbz', "", 0)
     call Preloader("DotaWC3\\in.txt")
@@ -280,7 +280,7 @@ function DWC_Init takes nothing returns nothing
     call PanCameraToTimed(x, y, 0.0)
     set udg_dwc_dmg = CreateTrigger()
     call TriggerAddAction(udg_dwc_dmg, function DWC_OnProxyDamaged)
-    call TimerStart(CreateTimer(), 0.1, true, function DWC_Exchange)
+    call TimerStart(CreateTimer(), 0.15, true, function DWC_Exchange)
     call TimerStart(CreateTimer(), 0.03, true, function DWC_Smooth)
     call DisplayTextToPlayer(Player(0), 0, 0, "DotaWC3: запусти bridge_wc3.py и Доту. Ты Мастер клинка, в Доте ты тоже Мастер клинка.")
 endfunction

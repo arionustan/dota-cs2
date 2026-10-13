@@ -22,9 +22,34 @@ def documents():
 WC3_DIR = r'C:\Games\Warcraft III'
 DIRS = [os.path.join(documents(), 'Warcraft III', 'CustomMapData', 'DotaWC3'),
         os.path.join(WC3_DIR, 'DotaWC3')]
+def is_link(d):
+    try:
+        return os.path.isjunction(d) or os.path.islink(d)
+    except AttributeError:
+        return os.path.realpath(d).lower() != os.path.abspath(d).lower()
+
+def move_out_of_onedrive(d):
+    # OneDrive grabs every write of the exchange file and WC3 stutters: keep the real files in C:\DotaWC3_exchange
+    if 'onedrive' not in d.lower() or is_link(d): return
+    target = r'C:\DotaWC3_exchange'
+    os.makedirs(target, exist_ok=True)
+    if os.path.isdir(d):
+        for f in os.listdir(d):
+            try: os.remove(os.path.join(d, f))
+            except OSError: pass
+        try: os.rmdir(d)
+        except OSError: return
+    os.makedirs(os.path.dirname(d), exist_ok=True)
+    import subprocess
+    subprocess.run(['cmd', '/c', 'mklink', '/J', d, target], capture_output=True)
+    print('Файлы обмена вынесены из OneDrive в', target)
+
 for d in DIRS:
-    try: os.makedirs(d, exist_ok=True)
-    except Exception: pass
+    try:
+        move_out_of_onedrive(d)
+        os.makedirs(d, exist_ok=True)
+    except Exception as e:
+        print('folder', d, e)
 
 lock = threading.Lock()
 state = {'heroes': [], 'dota_time': 0.0, 'players': [], 'wc3_time': 0.0, 'to_dota': [],
