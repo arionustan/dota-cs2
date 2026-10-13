@@ -63,7 +63,12 @@ endfunction
 
 function DWC_Proxy takes integer s, real x, real y returns unit
     if udg_dwc_u[s] == null or GetUnitTypeId(udg_dwc_u[s]) == 0 then
-        set udg_dwc_u[s] = CreateUnit(Player(1), 'h000', x, y, 0.0)
+        // an Abomination whose model is replaced by Dota Pudge inside this map; it never attacks by itself
+        set udg_dwc_u[s] = CreateUnit(Player(1), 'uabo', x, y, 0.0)
+        call UnitRemoveAbility(udg_dwc_u[s], 'Aatk')
+        call UnitRemoveAbility(udg_dwc_u[s], 'Aap1')
+        call BlzSetUnitMaxHP(udg_dwc_u[s], 5000)
+        call SetUnitState(udg_dwc_u[s], UNIT_STATE_LIFE, 5000.0)
         call SetUnitPathing(udg_dwc_u[s], false)
         call TriggerRegisterUnitEvent(udg_dwc_dmg, udg_dwc_u[s], EVENT_UNIT_DAMAGED)
         set udg_dwc_tx[s] = x

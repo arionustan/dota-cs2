@@ -4,7 +4,7 @@ sys.path.insert(0, '/tmp/w3')
 from mpq import MPQ, write_mpq
 
 SRC = '/mnt/user-data/uploads/Warcraft III/Maps/FrozenThrone/(4)TwistedMeadows.w3x'
-OUT = '/tmp/w3/out/DotaWC3_LAN.w3x'
+OUT = '/tmp/w3/out/DotaWC3_LAN3.w3x'
 MODEL_DIR = '/tmp/w3/out/pudge_wc3'
 
 GLOBALS = '''    // DotaWC3
@@ -64,7 +64,7 @@ def main():
     j = re.sub(r'call InitCustomTriggers\(\s*\)', 'call DWC_Init()', j)
     j = re.sub(r'call RunInitializationTriggers\(\s*\)', '', j)
     files['war3map.j'] = j.encode('utf-8')
-    files['war3map.w3u'] = w3u()
+    files.pop('war3map.w3u', None)
     wts = files['war3map.wts'].decode('utf-8', 'replace')
     wts = wts.replace('STRING 1\r\n{\r\n', 'STRING 1\r\n{\r\nDotaWC3 LAN MAP_TITLE', 1) if 'STRING 1\r\n{' in wts else wts.replace('STRING 1\n{\n', 'STRING 1\n{\nDotaWC3 LAN MAP_TITLE', 1)
     import re as _re
@@ -72,6 +72,8 @@ def main():
     files['war3map.wts'] = wts.encode('utf-8')
     for f in os.listdir(MODEL_DIR):
         files['war3mapImported\\' + f] = open(os.path.join(MODEL_DIR, f), 'rb').read()
+    # Dota Pudge replaces the Abomination model in this map only
+    files['Units\\Undead\\Abomination\\Abomination.mdx'] = open(os.path.join(MODEL_DIR, 'DotaPudge.mdx'), 'rb').read()
     for k in [k for k in files if k in ('war3map.wtg', 'war3map.wct')]:
         del files[k]   # editor-only trigger data, would not match the new script
     write_mpq(OUT, files, header_prefix=raw[:512])

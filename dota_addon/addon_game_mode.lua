@@ -54,6 +54,9 @@ _G.CS_HELMET_UPGRADE_PRICE = 350 -- helmet when you already have kevlar, like in
 function Precache(context)
     PrecacheUnitByNameSync(CS_BASE_HERO, context)
     PrecacheUnitByNameSync("npc_cs_proxy", context)
+    PrecacheUnitByNameSync("npc_wc3_blademaster", context)   -- WC3 hero model, created later by the bridge
+    PrecacheResource("model", "models/wc3/blademaster/blademaster.vmdl", context)
+    PrecacheResource("soundfile", "soundevents/game_sounds_heroes/game_sounds_juggernaut.vsndevts", context)
     PrecacheResource("particle", CS_TRACER, context)
     PrecacheResource("soundfile", "soundevents/game_sounds_heroes/game_sounds_sniper.vsndevts", context)
     PrecacheResource("soundfile", "soundevents/game_sounds_heroes/game_sounds_zuus.vsndevts", context)

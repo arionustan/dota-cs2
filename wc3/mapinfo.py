@@ -20,7 +20,7 @@ def map_info(map_path, common_j, blizzard_j):
     val = xoro(common_j) ^ xoro(blizzard_j)
     val = rotl(val, 3)
     val = rotl(val ^ 0x03F1379E, 3)
-    sha = hashlib.sha1(); sha.update(common_j); sha.update(blizzard_j); sha.update(struct.pack('<I', 0x9E37F103))
+    sha = hashlib.sha1(); sha.update(common_j); sha.update(blizzard_j); sha.update(struct.pack('>I', 0x9E37F103))
     for name in ['war3map.j', 'war3map.w3e', 'war3map.wpm', 'war3map.doo', 'war3map.w3u', 'war3map.w3b', 'war3map.w3d', 'war3map.w3a', 'war3map.w3q']:
         d = a.read(name)
         if d is None and name == 'war3map.j': d = a.read('scripts\\war3map.j')
@@ -39,6 +39,6 @@ def map_info(map_path, common_j, blizzard_j):
 if __name__ == '__main__':
     m, cj, bj, out = sys.argv[1:5]
     info = map_info(m, open(cj, 'rb').read(), open(bj, 'rb').read())
-    info['path'] = 'Maps\\' + os.path.basename(m)
+    info['path'] = 'Maps/' + os.path.basename(m)
     json.dump(info, open(out, 'w'), indent=1)
     print(info)
