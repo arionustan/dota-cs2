@@ -280,9 +280,12 @@ def game_loop():
         if t0 - last_print >= 1.0:
             last_print = t0
             with lock:
-                print('WC3: %s, %d upd/s  |  Dota: %d heroes, %d upd/s' % (
+                status = ('WC3: %s, %d upd/s  |  Dota: %d heroes, %d upd/s' % (
                     {'lobby': 'жду в LAN', 'loading': 'загрузка', 'game': 'игра'}[game.state] if game.conn or game.state == 'lobby' else '-',
-                    state['wc3_n'], len(state['heroes']), state['dota_n']), flush=True)
+                    state['wc3_n'], len(state['heroes']), state['dota_n']))
+                print(status, flush=True)
+                if game.state == 'game' and t0 - getattr(game, 'last_status_log', 0) > 10:
+                    game.last_status_log = t0; log(status)
                 state['wc3_n'] = 0; state['dota_n'] = 0
         time.sleep(max(0.0, LATENCY / 1000.0 - (time.time() - t0)))
 
