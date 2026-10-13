@@ -233,7 +233,9 @@ function CDotaCS:BridgeUpdateProxy(bridge, slot, x, y, fx, fy, hp, name)
     local target = ToDota(x, y)
 
     if not unit or unit:IsNull() then
-        unit = CreateUnitByName("npc_cs_proxy", target, true, nil, nil, self:BridgeEnemyTeam(bridge))
+        -- a hero coming from Warcraft III gets its WC3 model, CS2 players stay "npc_cs_proxy"
+        local unitName = (name and name:find("^WC3_")) and "npc_wc3_blademaster" or "npc_cs_proxy"
+        unit = CreateUnitByName(unitName, target, true, nil, nil, self:BridgeEnemyTeam(bridge))
         if not unit then return end
         unit.csSlot = slot
         unit:SetIdleAcquire(false)
@@ -281,6 +283,13 @@ function CDotaCS:BridgeUpdateProxy(bridge, slot, x, y, fx, fy, hp, name)
         return
     end
 
+    -- run / idle animation, the position is set directly so Dota does not animate it by itself
+    local moved = (unit:GetAbsOrigin() - GetGroundPosition(target, unit)):Length2D()
+    if moved > 4 and not unit.wcRun then
+        unit:StartGesture(ACT_DOTA_RUN); unit.wcRun = true
+    elseif moved <= 4 and unit.wcRun then
+        unit:RemoveGesture(ACT_DOTA_RUN); unit.wcRun = false
+    end
     unit:SetAbsOrigin(GetGroundPosition(target, unit))
     local dir = Vector(fx, fy, 0)
     if dir:Length2D() > 0.1 then
@@ -348,6 +357,10 @@ function CDotaCS:BridgeHeroHit(bridge, heroId, damage, attackerSlot, weapon)
 
     local attacker = bridge.proxies[attackerSlot]
     if not attacker or attacker:IsNull() then attacker = hero end -- unknown shooter: still apply damage
+    if attacker ~= hero and weapon == "blademaster" then
+        attacker:StartGesture(ACT_DOTA_ATTACK)
+        EmitSoundOn("Hero_Juggernaut.Attack", hero)
+    end
 
     local weaponName = (weapon or ""):gsub("^weapon_", "")
     local wasAlive = hero:IsAlive()

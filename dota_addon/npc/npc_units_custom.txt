@@ -34,4 +34,36 @@
 
 		"UnitRelationshipClass"		"DOTA_NPC_UNIT_RELATIONSHIP_TYPE_DEFAULT"
 	}
+
+	// The Blademaster from Warcraft III (DotaWC3). Same rules as npc_cs_proxy, model converted from WC3.
+	"npc_wc3_blademaster"
+	{
+		"BaseClass"					"npc_dota_creature"
+		"Model"						"models/wc3/blademaster/blademaster.vmdl"
+		"ModelScale"				"0.9"
+		"Level"						"6"
+		"ConsideredHero"			"1"
+		"SoundSet"					"Hero_Juggernaut"
+
+		"AttackCapabilities"		"DOTA_UNIT_CAP_NO_ATTACK"
+		"MovementCapabilities"		"DOTA_UNIT_CAP_MOVE_GROUND"
+		"MovementSpeed"				"300"
+
+		"StatusHealth"				"1000"
+		"StatusHealthRegen"			"0"
+		"StatusMana"				"0"
+		"ArmorPhysical"				"0"
+		"MagicalResistance"			"0"
+
+		"BountyXP"					"200"
+		"BountyGoldMin"				"300"
+		"BountyGoldMax"				"300"
+
+		"RingRadius"				"40"
+		"HealthBarOffset"			"230"
+		"VisionDaytimeRange"		"800"
+		"VisionNighttimeRange"		"800"
+
+		"UnitRelationshipClass"		"DOTA_NPC_UNIT_RELATIONSHIP_TYPE_DEFAULT"
+	}
 }
