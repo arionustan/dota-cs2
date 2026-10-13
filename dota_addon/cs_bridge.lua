@@ -212,7 +212,7 @@ function CDotaCS:BridgeResult(bridge, result)
     if count == 0 then
         if not bridge.waitingMsg then
             bridge.waitingMsg = true
-            self:Msg("Мост работает, жду игроков с сервера КС2. Зайди на свой сервер и побегай.")
+            self:Msg("Мост работает, жду игроков из КС2 или Warcraft III.")
         end
     else
         bridge.waitingMsg = false
@@ -241,7 +241,11 @@ function CDotaCS:BridgeUpdateProxy(bridge, slot, x, y, fx, fy, hp, name)
         unit:SetIdleAcquire(false)
         unit:AddNewModifier(unit, nil, "modifier_cs_proxy", {})
         bridge.proxies[slot] = unit
-        self:Msg("Ксник из КС2 появился в Доте. Его можно бить скиллами!")
+        if unitName == "npc_wc3_blademaster" then
+            self:Msg("Мастер клинка из Warcraft III появился в Доте. Его можно бить скиллами!")
+        else
+            self:Msg("Ксник из КС2 появился в Доте. Его можно бить скиллами!")
+        end
     end
 
     if name and name ~= "" then unit.csName = name end
