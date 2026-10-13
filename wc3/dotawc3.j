@@ -171,7 +171,7 @@ function DWC_Exchange takes nothing returns nothing
     local string tok
     local integer seq
     local real hp
-    set udg_dwc_time = udg_dwc_time + 0.15
+    set udg_dwc_time = udg_dwc_time + 0.2
     // ---- read what the bridge wrote
     call BlzSetAbilityTooltip('AHbz', "", 0)
     call Preloader("DotaWC3\\in.txt")
@@ -190,7 +190,17 @@ function DWC_Exchange takes nothing returns nothing
             endloop
         endif
     endif
-    // ---- write our hero
+    // ---- write our hero: only when something changed (or once a second), every write costs WC3 a disk hit
+    if udg_dwc_bm != null then
+        set hp = GetUnitX(udg_dwc_bm) + GetUnitY(udg_dwc_bm) * 3.0 + GetUnitFacing(udg_dwc_bm) + GetWidgetLife(udg_dwc_bm) * 7.0
+    else
+        set hp = 0.0
+    endif
+    if udg_dwc_hits == "" and RAbsBJ(hp - udg_dwc_lastSig) < 1.0 and udg_dwc_time - udg_dwc_lastWrite < 1.0 then
+        return
+    endif
+    set udg_dwc_lastSig = hp
+    set udg_dwc_lastWrite = udg_dwc_time
     set udg_dwc_out = udg_dwc_out + 1
     call PreloadGenClear()
     call PreloadGenStart()
@@ -280,7 +290,7 @@ function DWC_Init takes nothing returns nothing
     call PanCameraToTimed(x, y, 0.0)
     set udg_dwc_dmg = CreateTrigger()
     call TriggerAddAction(udg_dwc_dmg, function DWC_OnProxyDamaged)
-    call TimerStart(CreateTimer(), 0.15, true, function DWC_Exchange)
+    call TimerStart(CreateTimer(), 0.2, true, function DWC_Exchange)
     call TimerStart(CreateTimer(), 0.03, true, function DWC_Smooth)
     call DisplayTextToPlayer(Player(0), 0, 0, "DotaWC3: запусти bridge_wc3.py и Доту. Ты Мастер клинка, в Доте ты тоже Мастер клинка.")
 endfunction

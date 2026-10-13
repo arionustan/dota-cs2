@@ -31,6 +31,8 @@ GLOBALS = '''    // DotaWC3
     integer udg_dwc_seq = -1
     integer udg_dwc_out = 0
     integer udg_dwc_lastK = 0
+    real udg_dwc_lastSig = 0.0
+    real udg_dwc_lastWrite = 0.0
 '''
 
 def w3u():
