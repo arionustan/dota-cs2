@@ -114,24 +114,34 @@ lock = threading.Lock()
 state = {'heroes': [], 'dota_time': 0.0, 'players': [], 'wc3_time': 0.0, 'to_dota': [],
          'k_cmds': [], 'k_next': 1, 'acked_k': 0, 'cmd': {}, 'wc3_seq': -1, 'in_seq': 0, 'dota_n': 0, 'wc3_n': 0}
 
+MAX_TEXT = 300
+
 def wc3_text():
     now = time.time()
     with lock:
         state['in_seq'] += 1
         out = ['#%d' % state['in_seq']]
+        heroes = []
         if now - state['dota_time'] < 2.0:
             for h in state['heroes']:
                 p = h.split()
                 if len(p) >= 10:
                     act = p[11] if len(p) > 11 else '-'
-                    out.append('H %s %d %d %s %s %s %s %s %s' % (p[1], float(p[2]), float(p[3]), p[5], p[6], p[7], p[8], p[9], act))
+                    heroes.append('H %s %d %d %s %s %s %s %s %s' % (p[1], float(p[2]), float(p[3]), p[5], p[6], p[7], p[8], p[9], act))
         state['k_cmds'] = [(i, c) for i, c in state['k_cmds'] if i > state['acked_k']]
-        out += [c for _, c in state['k_cmds']]
+        out += [c for _, c in state['k_cmds']][:4]          # damage first, it carries an id and an ack
         for key, (c, t) in list(state['cmd'].items()):
             if now - t > 0.35: del state['cmd'][key]
             else: out.append(c)
+        # one game packet must stay under ~1400 bytes (WC3 drops the client otherwise): rotate heroes when too many
+        if heroes:
+            k = state['in_seq'] % len(heroes)
+            heroes = heroes[k:] + heroes[:k]
+        for h in heroes:
+            if sum(len(x) + 1 for x in out) + len(h) + 1 > MAX_TEXT: break
+            out.append(h)
     text = ';'.join(out) + ';'
-    return ''.join(ch if ch in CHARS else '_' for ch in text)[:900]
+    return ''.join(ch if ch in CHARS else '_' for ch in text)[:MAX_TEXT]
 
 def sync_int(key, value):
     return b'\x6b' + CACHE + b'\0' + b'i\0' + key.encode() + b'\0' + struct.pack('<i', value)
@@ -199,7 +209,7 @@ def on_packet(pid, body):
                 log('Карта у игрока совпадает, запускаю игру через 3 секунды')
                 threading.Timer(3.0, start_game).start()
         else:
-            log('ОШИБКА: WC3 говорит, что карта другая (flag %d, size %d, ждали %d). Положи DotaWC3_LAN.w3x в Maps.' % (flag, size, INFO['size']))
+            log('ОШИБКА: WC3 говорит, что карта другая (flag %d, size %d, ждали %d). Положи %s в папку Warcraft III.' % (flag, size, INFO['size'], INFO['path']))
     elif pid == 0x23:                                  # GAMELOADED_SELF
         send(pkt(0x08, bytes([game.player_pid])))
         game.loaded = True; game.state = 'game'
