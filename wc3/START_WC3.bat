@@ -20,7 +20,7 @@ echo [2/3] Starting Dota 2 with the DotaCS custom game, pick Pudge...
 start "" "%DOTA%\game\bin\win64\dota2.exe" -addon dotacs -tools -steam -novid +dota_launch_custom_game dotacs dota
 
 echo [3/3] Starting Warcraft III with the test map...
-start "" /D "%WC3%" "%WC3%\Warcraft III.exe" -window -loadfile "Maps\DotaWC3_Test.w3x"
+start "" /D "%WC3%" "%WC3%\Warcraft III.exe" -window -loadfile "Maps\DotaWC3_Live.w3x"
 
 echo Done. You can close this window.
 pause
