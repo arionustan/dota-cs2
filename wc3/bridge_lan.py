@@ -35,8 +35,8 @@ def encode_stat(data):
     for i in range(0, len(data), 7):
         chunk = data[i:i + 7]; mask = 1; enc = bytearray()
         for j, b in enumerate(chunk):
-            if b % 2 == 0: enc.append(b + 1); mask |= 1 << (j + 1)
-            else: enc.append(b)
+            if b % 2 == 0: enc.append(b + 1)
+            else: enc.append(b); mask |= 1 << (j + 1)
         out.append(mask); out += enc
     return bytes(out)
 
@@ -242,7 +242,7 @@ def udp_announcer():
     while True:
         if game.state == 'lobby':
             data = game.gameinfo()
-            for addr in (('255.255.255.255', 6112), ('127.0.0.1', 6112)):
+            for addr in (('255.255.255.255', 6112),):
                 try: u.sendto(data, addr)
                 except OSError: pass
         time.sleep(1.0)
