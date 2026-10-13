@@ -70,7 +70,7 @@ def main():
     code = code.replace('    set udg_dwc_bm = CreateUnit(', '    call DWC_Buildings()\n    set udg_dwc_bm = CreateUnit(', 1)
     j = re.sub(r'call SetCameraBounds\([^\n]*', G.jass_bounds().replace('\\', '\\\\'), j, 1)
     (gx, gy), (bx, by) = G.start_locs(ents)
-    for k, (x, y) in enumerate([(gx, gy), (bx, by), (gx, gy), (bx, by)]):
+    for k, (x, y) in enumerate([(bx, by), (gx, gy), (bx, by), (gx, gy)]):  # WC3 hero is the enemy of the Dota hero (Radiant), starts at Dire
         j = re.sub(r'call DefineStartLocation\( %d, [^)]*\)' % k, 'call DefineStartLocation( %d, %.1f, %.1f )' % (k, x, y), j)
     j = re.sub(r'call CreateAllUnits\(\s*\)', '', j)
     r = G.build()

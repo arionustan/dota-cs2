@@ -77,6 +77,7 @@ def build():
     # the per-point height offset cancels the layer step there, real Dota cliffs show WC3 cliff models
     lay = np.clip(np.round(wz / 128.0) + 2, 0, 15)
     lay = ndimage.median_filter(lay, size=3)  # no single-point cliff blips
+    lay[:] = 2  # cliff layers cut off ramps (fountain was sealed), keep one layer and real heights
     for _ in range(40):                       # cliff models only exist for steps of up to 2 layers
         ch = False
         for ax in (0, 1):
@@ -170,15 +171,23 @@ def jass_buildings():
     for cls, name, _, x, y in b:
         good = 'goodguys' in name
         f = 45.0 if good else 225.0
-        if cls == 'npc_dota_tower': add('hgtw' if good else 'uzg1', x, y, f)
-        elif cls == 'npc_dota_barracks': add(('hbar' if good else 'usep') if 'melee' in name else ('hars' if good else 'utod'), x, y, f)
+        if cls == 'npc_dota_tower': add('etrp' if good else 'uzg1', x, y, f)
+        elif cls == 'npc_dota_barracks': add(('eaom' if good else 'usep') if 'melee' in name else ('eaow' if good else 'utod'), x, y, f)
         elif cls == 'npc_dota_fort': add('etoe' if good else 'unp2', x, y, f)
-        elif cls == 'npc_dota_building': add('hhou' if good else 'uzig', x, y, f)
+        elif cls == 'npc_dota_building': add('emow' if good else 'uzig', x, y, f)
         elif cls == 'npc_dota_watch_tower': add('hwtw', x, y, 270.0)
         elif cls == 'ent_dota_fountain': add('nfoh' if x < 0 else 'ndfl', x, y, f)
+    # DotA Allstars style: taverns and item shops in an arc around each fountain
+    base = {True: ['ntav', 'ntav', 'ntav', 'eden', 'hvlt', 'ngme', 'nmrk', 'ngad', 'ntav'],
+            False: ['ntav', 'ntav', 'ntav', 'utom', 'hvlt', 'ngme', 'nmrk', 'ngad', 'ntav']}
+    for good, (fx, fy), a0 in ((True, (-7456.0, -6938.0), 0.0), (False, (7408.0, 6848.0), 180.0)):
+        ids = base[good]
+        for k, uid in enumerate(ids):
+            a = math.radians(a0 + 90.0 * (k + 0.5) / len(ids))
+            add(uid, fx + 1250 * math.cos(a), fy + 1250 * math.sin(a), (math.degrees(a) + 180) % 360)
     for e in ents:
         c = e.get('classname'); x, y = e['origin'][:2]
-        if c == 'ent_dota_shop': add('ngme', x, y, 270.0)
+        if c == 'ent_dota_shop' and e.get('shoptype') == '2': add('ngad', x, y, 270.0)
         elif c == 'npc_dota_unit_twin_gate': add('nwgt', x, y, 270.0)
     return lines
 
