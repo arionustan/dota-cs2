@@ -171,7 +171,28 @@ function DWC_Exchange takes nothing returns nothing
     local string tok
     local integer seq
     local real hp
+    local integer i
+    local real d
+    local boolean near = false
     set udg_dwc_time = udg_dwc_time + 0.2
+    set udg_dwc_tick = udg_dwc_tick + 1
+    // a disk read/write stalls WC3 for a moment: do it often only while a Dota hero is close
+    if udg_dwc_bm != null then
+        set i = 0
+        loop
+            exitwhen i >= udg_dwc_n
+            if udg_dwc_u[i] != null and UnitAlive(udg_dwc_u[i]) then
+                set d = SquareRoot((GetUnitX(udg_dwc_u[i]) - GetUnitX(udg_dwc_bm)) * (GetUnitX(udg_dwc_u[i]) - GetUnitX(udg_dwc_bm)) + (GetUnitY(udg_dwc_u[i]) - GetUnitY(udg_dwc_bm)) * (GetUnitY(udg_dwc_u[i]) - GetUnitY(udg_dwc_bm)))
+                if d < 3000.0 then
+                    set near = true
+                endif
+            endif
+            set i = i + 1
+        endloop
+    endif
+    if not near and udg_dwc_hits == "" and ModuloInteger(udg_dwc_tick, 5) != 0 then
+        return
+    endif
     // ---- read what the bridge wrote
     call BlzSetAbilityTooltip('AHbz', "", 0)
     call Preloader("DotaWC3\\in.txt")

@@ -142,8 +142,8 @@ def write_wc3():
             else: out.append(c)
     data = ';'.join(out) + ';'
     data = data[:1000]
-    script = ('function PreloadFiles takes nothing returns nothing\n\n\tcall PreloadStart()\n'
-              '\tcall BlzSetAbilityTooltip(\'AHbz\', "%s", 0)\n\tcall PreloadEnd( 0.0 )\n\nendfunction\n' % data)
+    script = ('function PreloadFiles takes nothing returns nothing\n'
+              '\tcall BlzSetAbilityTooltip(\'AHbz\', "%s", 0)\nendfunction\n' % data)
     for d in DIRS:
         f = os.path.join(d, 'in.txt'); tmp = f + '.tmp'
         try:
