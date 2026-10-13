@@ -65,6 +65,11 @@ def main():
     j = re.sub(r'call RunInitializationTriggers\(\s*\)', '', j)
     files['war3map.j'] = j.encode('utf-8')
     files['war3map.w3u'] = w3u()
+    wts = files['war3map.wts'].decode('utf-8', 'replace')
+    wts = wts.replace('STRING 1\r\n{\r\n', 'STRING 1\r\n{\r\nDotaWC3 LAN MAP_TITLE', 1) if 'STRING 1\r\n{' in wts else wts.replace('STRING 1\n{\n', 'STRING 1\n{\nDotaWC3 LAN MAP_TITLE', 1)
+    import re as _re
+    wts = _re.sub(r'DotaWC3 LAN MAP_TITLE[^\r\n]*', 'DotaWC3 LAN', wts, 1)
+    files['war3map.wts'] = wts.encode('utf-8')
     for f in os.listdir(MODEL_DIR):
         files['war3mapImported\\' + f] = open(os.path.join(MODEL_DIR, f), 'rb').read()
     for k in [k for k in files if k in ('war3map.wtg', 'war3map.wct')]:

@@ -10,6 +10,16 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 INFO = json.load(open(os.path.join(HERE, 'DotaWC3_LAN.json')))
+STAT_REST = None
+_probe = os.path.join(HERE, 'DotaWC3_probe.json')
+if os.path.exists(_probe):
+    # exact values reported by Warcraft III itself (wc3_probe.py) win over our own calculation
+    _p = json.load(open(_probe))
+    if _p.get('size') == INFO['size'] and 'xoro' in _p:
+        for k in ('crc32', 'xoro', 'sha1', 'path', 'width', 'height', 'version'):
+            if k in _p: INFO[k] = _p[k]
+        INFO['stat_flags'] = _p.get('stat_flags')
+        STAT_REST = bytes.fromhex(_p.get('stat_rest_hex', ''))
 WC3_DIR = r'C:\Games\Warcraft III'
 HOST_PORT = 6113
 HTTP_PORT = 3000
@@ -21,8 +31,15 @@ NUM_SLOTS = INFO.get('slots', 4)
 CACHE = b'dwc.w3v'
 CHARS = " 0123456789;-.#ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_"
 
+LOGFILE = os.path.join(HERE, 'bridge_lan.log')
+open(LOGFILE, 'w', encoding='utf-8').close()
+
 def log(*a):
-    print(time.strftime('%H:%M:%S'), *a, flush=True)
+    line = time.strftime('%H:%M:%S') + ' ' + ' '.join(str(x) for x in a)
+    print(line, flush=True)
+    try:
+        with open(LOGFILE, 'a', encoding='utf-8') as f: f.write(line + '\n')
+    except OSError: pass
 
 # ------------------------------------------------------------------ W3GS packets
 def pkt(pid, body=b''):
@@ -71,9 +88,9 @@ class Game:
         return b + struct.pack('<IBB', self.seed, 0, len(self.slots))
 
     def gameinfo(self):
-        flags = 0x00000002 | 0x00000800 | 0x00004000 | 0x00060000
+        flags = INFO.get('stat_flags') or (0x00000002 | 0x00000800 | 0x00004000 | 0x00060000)
         stat = struct.pack('<IBHHI', flags, 0, INFO['width'], INFO['height'], INFO['xoro'])
-        stat += cstr(INFO['path']) + cstr(BOT_NAME) + b'\0' + bytes.fromhex(INFO['sha1'])
+        stat += cstr(INFO['path']) + cstr(BOT_NAME) + (STAT_REST if STAT_REST is not None else b'\0' + bytes.fromhex(INFO['sha1']))
         open_slots = sum(1 for s in self.slots if s.status == 0)
         body = b'PX3W' + struct.pack('<III', VERSION, self.host_counter, self.entry_key)
         body += cstr(GAME_NAME) + b'\0' + encode_stat(stat) + b'\0'
@@ -174,6 +191,7 @@ def on_packet(pid, body):
         log('Игрок вошёл в лобби:', game.player_name)
     elif pid == 0x42:                                  # MAPSIZE
         flag = body[4]; size = struct.unpack_from('<I', body, 5)[0]
+        log('MAPSIZE', body.hex())
         if flag == 1 and size == INFO['size']:
             if not game.map_ok:
                 game.map_ok = True; game.slots[0].download = 100
@@ -199,7 +217,7 @@ def on_packet(pid, body):
     elif pid == 0x28:
         pass
     else:
-        log('пакет 0x%02X (%d байт)' % (pid, len(body)))
+        log('пакет 0x%02X (%d байт) %s' % (pid, len(body), body[:40].hex()))
 
 def start_game():
     if not game.conn or game.state != 'lobby': return
