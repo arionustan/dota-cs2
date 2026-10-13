@@ -218,3 +218,49 @@ def write_mpq(path, files, header_prefix=b''):
         f.write(hdr); f.write(body)
         f.write(encrypt(htb, hash_str('(hash table)', 3)))
         f.write(encrypt(btb, hash_str('(block table)', 3)))
+
+
+def _pack_file(data, sector):
+    ns = max(1, (len(data) + sector - 1) // sector)
+    secs = []
+    for s in range(ns):
+        chunk = data[s * sector:(s + 1) * sector]
+        c = b'\x02' + zlib.compress(chunk, 9)
+        secs.append(c if len(c) < len(chunk) else chunk)
+    offs = [(ns + 1) * 4]
+    for c in secs: offs.append(offs[-1] + len(c))
+    return struct.pack('<%dI' % (ns + 1), *offs) + b''.join(secs)
+
+
+def patch_mpq(src, out, replace):
+    """Copies an MPQ byte for byte (keeps files whose names are unknown, e.g. protected maps)
+    and replaces or adds the named files. replace: dict name -> bytes."""
+    a = MPQ(src)
+    data = a.data; base = a.base
+    _, hsize, asize, ver, sshift, htpos, btpos, htn, btn = struct.unpack_from('<4sIIHHIIII', data, base)
+    body = bytearray(data[base:])        # everything after the prefix, offsets stay valid
+    hdr_len = 32
+    hashes = [list(h) for h in a.hash]; blocks = [list(b) for b in a.block]
+    for name, d in replace.items():
+        blob = _pack_file(d, a.sector)
+        pos = len(body); body += blob
+        entry = [pos, len(blob), len(d), 0x80000000 | 0x00000200]
+        bi = a.find(name)
+        if bi is not None:
+            blocks[bi] = entry
+            continue
+        blocks.append(entry); bi = len(blocks) - 1
+        i = hash_str(name, 0) % htn
+        for _ in range(htn):
+            if hashes[i][4] in (0xFFFFFFFF, 0xFFFFFFFE): break
+            i = (i + 1) % htn
+        else:
+            raise ValueError('hash table full')
+        hashes[i] = [hash_str(name, 1), hash_str(name, 2), 0, 0, bi]
+    htb = b''.join(struct.pack('<IIHHI', *h) for h in hashes)
+    btb = b''.join(struct.pack('<IIII', *b) for b in blocks)
+    new_ht = len(body); body += encrypt(htb, hash_str('(hash table)', 3))
+    new_bt = len(body); body += encrypt(btb, hash_str('(block table)', 3))
+    struct.pack_into('<4sIIHHIIII', body, 0, b'MPQ\x1a', hdr_len, len(body), 0, sshift, new_ht, new_bt, htn, len(blocks))
+    with open(out, 'wb') as f:
+        f.write(data[:base]); f.write(body)

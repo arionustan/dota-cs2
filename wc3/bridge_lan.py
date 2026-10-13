@@ -116,6 +116,18 @@ state = {'heroes': [], 'dota_time': 0.0, 'players': [], 'wc3_time': 0.0, 'to_dot
 
 MAX_TEXT = 300
 
+# Dota 2 and the WC3 map may use different coordinates (DotA 6.83 map): affine Dota -> WC3 from the map json
+_XF = INFO.get('xform')
+def d2w(x, y):
+    if not _XF: return x, y
+    a, b = _XF['a'], _XF['b']
+    return a[0] * x + a[1] * y + a[2], b[0] * x + b[1] * y + b[2]
+def w2d(x, y):
+    if not _XF: return x, y
+    a, b = _XF['a'], _XF['b']
+    det = a[0] * b[1] - a[1] * b[0]; x -= a[2]; y -= b[2]
+    return (b[1] * x - a[1] * y) / det, (-b[0] * x + a[0] * y) / det
+
 def wc3_text():
     now = time.time()
     with lock:
@@ -127,7 +139,7 @@ def wc3_text():
                 p = h.split()
                 if len(p) >= 10:
                     act = p[11] if len(p) > 11 else '-'
-                    heroes.append('H %s %d %d %s %s %s %s %s %s' % (p[1], float(p[2]), float(p[3]), p[5], p[6], p[7], p[8], p[9], act))
+                    heroes.append('H %s %d %d %s %s %s %s %s %s' % ((p[1],) + d2w(float(p[2]), float(p[3])) + ( p[5], p[6], p[7], p[8], p[9], act)))
         state['k_cmds'] = [(i, c) for i, c in state['k_cmds'] if i > state['acked_k']]
         out += [c for _, c in state['k_cmds']][:4]          # damage first, it carries an id and an ack
         for key, (c, t) in list(state['cmd'].items()):
@@ -164,7 +176,15 @@ def handle_wc3_text(t):
     with lock:
         state['wc3_time'] = time.time(); state['wc3_n'] += 1
         if len(hdr) > 2: state['acked_k'] = max(state['acked_k'], int(hdr[2]))
-        ps = [l for l in lines[1:] if l.startswith('P ')]
+        ps = []
+        for l in lines[1:]:
+            if not l.startswith('P '): continue
+            q = l.split()
+            if len(q) > 3:
+                try:
+                    x, y = w2d(float(q[2]), float(q[3])); q[2], q[3] = '%d' % x, '%d' % y
+                except ValueError: pass
+            ps.append(' '.join(q))
         if ps: state['players'] = ps
         state['to_dota'] += [l for l in lines[1:] if l.startswith('D ')]
 
@@ -318,7 +338,7 @@ class Handler(BaseHTTPRequestHandler):
                 kind, slot = p[1], p[2]
                 if kind == 'K' and len(p) >= 4:
                     state['k_cmds'].append((state['k_next'], 'K %s %s %d' % (slot, p[3], state['k_next']))); state['k_next'] += 1
-                elif kind == 'T' and len(p) >= 5: state['cmd'][('T', slot)] = ('T %s %d %d' % (slot, float(p[3]), float(p[4])), now)
+                elif kind == 'T' and len(p) >= 5: state['cmd'][('T', slot)] = ('T %s %d %d' % ((slot,) + d2w(float(p[3]), float(p[4]))), now)
                 elif kind == 'S' and len(p) >= 4: state['cmd'][('S', slot)] = ('S %s %s' % (slot, p[3]), now)
                 elif kind == 'V' and len(p) >= 4: state['cmd'][('V', slot)] = ('V %s %s' % (slot, p[3]), now)
                 elif kind == 'H' and len(p) >= 4: state['cmd'][('L', slot)] = ('L %s %s' % (slot, p[3]), now)
