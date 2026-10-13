@@ -4,7 +4,7 @@ sys.path.insert(0, '/tmp/w3')
 from mpq import MPQ, write_mpq
 
 SRC = '/mnt/user-data/uploads/Warcraft III/Maps/FrozenThrone/(4)TwistedMeadows.w3x'
-OUT = '/tmp/w3/out/DotaWC3_Test.w3x'
+OUT = '/tmp/w3/out/DotaWC3_LAN.w3x'
 MODEL_DIR = '/tmp/w3/out/pudge_wc3'
 
 GLOBALS = '''    // DotaWC3
@@ -34,6 +34,8 @@ GLOBALS = '''    // DotaWC3
     real udg_dwc_lastSig = 0.0
     real udg_dwc_lastWrite = 0.0
     integer udg_dwc_tick = 0
+    gamecache udg_dwc_gc = null
+    integer udg_dwc_rseq = 0
 '''
 
 def w3u():

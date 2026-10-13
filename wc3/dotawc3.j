@@ -167,51 +167,64 @@ function DWC_ReadLine takes nothing returns nothing
     set u = null
 endfunction
 
+function DWC_Decode takes nothing returns string
+    // the bridge packs its text into integers, 5 characters per integer (base 67)
+    local string cs = " 0123456789;-.#ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_"
+    local integer n = GetStoredInteger(udg_dwc_gc, "i", "n")
+    local integer k = 0
+    local integer j
+    local integer v
+    local integer c
+    local string s = ""
+    loop
+        exitwhen k >= n
+        set v = GetStoredInteger(udg_dwc_gc, "i", I2S(k))
+        set j = 0
+        loop
+            exitwhen j >= 5
+            set c = ModuloInteger(v, 67)
+            set v = v / 67
+            set s = s + SubString(cs, c, c + 1)
+            set j = j + 1
+        endloop
+        set k = k + 1
+    endloop
+    return s
+endfunction
+
+function DWC_Send takes string line returns nothing
+    // only the real player's PC sends; the LAN host (bridge) reads the key of this sync action
+    if GetLocalPlayer() == Player(0) then
+        call StoreInteger(udg_dwc_gc, "o", line, 0)
+        call SyncStoredInteger(udg_dwc_gc, "o", line)
+    endif
+endfunction
+
 function DWC_Exchange takes nothing returns nothing
     local string tok
     local integer seq
     local real hp
-    local integer i
-    local real d
-    local boolean near = false
-    set udg_dwc_time = udg_dwc_time + 0.2
-    set udg_dwc_tick = udg_dwc_tick + 1
-    // a disk read/write stalls WC3 for a moment: do it often only while a Dota hero is close
-    if udg_dwc_bm != null then
-        set i = 0
-        loop
-            exitwhen i >= udg_dwc_n
-            if udg_dwc_u[i] != null and UnitAlive(udg_dwc_u[i]) then
-                set d = SquareRoot((GetUnitX(udg_dwc_u[i]) - GetUnitX(udg_dwc_bm)) * (GetUnitX(udg_dwc_u[i]) - GetUnitX(udg_dwc_bm)) + (GetUnitY(udg_dwc_u[i]) - GetUnitY(udg_dwc_bm)) * (GetUnitY(udg_dwc_u[i]) - GetUnitY(udg_dwc_bm)))
-                if d < 3000.0 then
-                    set near = true
-                endif
-            endif
-            set i = i + 1
-        endloop
-    endif
-    if not near and udg_dwc_hits == "" and ModuloInteger(udg_dwc_tick, 5) != 0 then
-        return
-    endif
-    // ---- read what the bridge wrote
-    call BlzSetAbilityTooltip('AHbz', "", 0)
-    call Preloader("DotaWC3\\in.txt")
-    set udg_dwc_s = BlzGetAbilityTooltip('AHbz', 0)
-    set udg_dwc_len = StringLength(udg_dwc_s)
-    set udg_dwc_p = 0
-    if udg_dwc_len > 1 then
-        set tok = DWC_Tok()
-        set seq = S2I(SubString(tok, 1, StringLength(tok)))
-        call DWC_EndLine()
-        if seq != udg_dwc_seq then
-            set udg_dwc_seq = seq
+    set udg_dwc_time = udg_dwc_time + 0.1
+    // ---- read what the bridge sent (gamecache, synced over LAN by the bridge player)
+    set seq = GetStoredInteger(udg_dwc_gc, "i", "s")
+    if seq != 0 and seq != udg_dwc_rseq then
+        set udg_dwc_rseq = seq
+        set udg_dwc_s = DWC_Decode()
+        set udg_dwc_len = StringLength(udg_dwc_s)
+        set udg_dwc_p = 0
+        if udg_dwc_len > 1 then
+            set tok = DWC_Tok()
+            call DWC_EndLine()
             loop
                 exitwhen udg_dwc_p >= udg_dwc_len
                 call DWC_ReadLine()
             endloop
         endif
     endif
-    // ---- write our hero: only when something changed (or once a second), every write costs WC3 a disk hit
+    // ---- send our hero: only when something changed (or once a second)
+    if GetLocalPlayer() == Player(0) then
+        call FlushStoredMission(udg_dwc_gc, "o")
+    endif
     if udg_dwc_bm != null then
         set hp = GetUnitX(udg_dwc_bm) + GetUnitY(udg_dwc_bm) * 3.0 + GetUnitFacing(udg_dwc_bm) + GetWidgetLife(udg_dwc_bm) * 7.0
     else
@@ -223,18 +236,12 @@ function DWC_Exchange takes nothing returns nothing
     set udg_dwc_lastSig = hp
     set udg_dwc_lastWrite = udg_dwc_time
     set udg_dwc_out = udg_dwc_out + 1
-    call PreloadGenClear()
-    call PreloadGenStart()
-    call Preload("S " + I2S(udg_dwc_out) + " " + I2S(udg_dwc_lastK))
     if udg_dwc_bm != null and UnitAlive(udg_dwc_bm) then
-        set hp = GetWidgetLife(udg_dwc_bm)
-        call Preload("P 0 " + R2S(GetUnitX(udg_dwc_bm)) + " " + R2S(GetUnitY(udg_dwc_bm)) + " 0 " + R2S(Cos(GetUnitFacing(udg_dwc_bm) * bj_DEGTORAD)) + " " + R2S(Sin(GetUnitFacing(udg_dwc_bm) * bj_DEGTORAD)) + " 0 " + I2S(R2I(hp)) + " WC3_Blademaster")
+        call DWC_Send("S " + I2S(udg_dwc_out) + " " + I2S(udg_dwc_lastK) + ";P 0 " + I2S(R2I(GetUnitX(udg_dwc_bm))) + " " + I2S(R2I(GetUnitY(udg_dwc_bm))) + " 0 " + R2S(Cos(GetUnitFacing(udg_dwc_bm) * bj_DEGTORAD)) + " " + R2S(Sin(GetUnitFacing(udg_dwc_bm) * bj_DEGTORAD)) + " 0 " + I2S(R2I(GetWidgetLife(udg_dwc_bm))) + " WC3_Blademaster;" + udg_dwc_hits)
+    else
+        call DWC_Send("S " + I2S(udg_dwc_out) + " " + I2S(udg_dwc_lastK) + ";" + udg_dwc_hits)
     endif
-    if udg_dwc_hits != "" then
-        call Preload(udg_dwc_hits)
-        set udg_dwc_hits = ""
-    endif
-    call PreloadGenEnd("DotaWC3\\out.txt")
+    set udg_dwc_hits = ""
 endfunction
 
 function DWC_Smooth takes nothing returns nothing
@@ -311,7 +318,8 @@ function DWC_Init takes nothing returns nothing
     call PanCameraToTimed(x, y, 0.0)
     set udg_dwc_dmg = CreateTrigger()
     call TriggerAddAction(udg_dwc_dmg, function DWC_OnProxyDamaged)
-    call TimerStart(CreateTimer(), 0.2, true, function DWC_Exchange)
+    set udg_dwc_gc = InitGameCache("dwc.w3v")
+    call TimerStart(CreateTimer(), 0.1, true, function DWC_Exchange)
     call TimerStart(CreateTimer(), 0.03, true, function DWC_Smooth)
-    call DisplayTextToPlayer(Player(0), 0, 0, "DotaWC3: запусти bridge_wc3.py и Доту. Ты Мастер клинка, в Доте ты тоже Мастер клинка.")
+    call DisplayTextToPlayer(Player(0), 0, 0, "DotaWC3: ты Мастер клинка, Пудж приходит из Доты.")
 endfunction
