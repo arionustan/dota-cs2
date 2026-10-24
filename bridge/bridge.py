@@ -59,7 +59,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.startswith("/cs"):
             with lock:
                 state["players"] = [l for l in lines if l.startswith("P ")]
-                hits = [l for l in lines if l.startswith(("D ", "T ", "G "))]   # G: grenades, runes
+                hits = [l for l in lines if l.startswith(("D ", "T ", "G ", "M "))]   # G: grenades, runes, wards; M: chat
                 state["to_dota"] += hits
                 state["hits"] += len(hits)
                 state["cs_time"] = now

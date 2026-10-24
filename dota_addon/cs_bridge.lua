@@ -46,6 +46,57 @@ function CDotaCS:BridgeAutoStart()
         if not self.bridge then self:BridgeToggle(0, true) end
         return nil
     end, 3)
+    -- custom games don't always spawn Roshan and the Tormentors: make sure they exist
+    GameRules:GetGameModeEntity():SetContextThink("cs_bosses", function()
+        if GameRules:State_Get() < DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then return 2 end
+        self:BridgeEnsureBoss("npc_dota_roshan", Vector(2831, -2740, 64))
+        self:BridgeEnsureBoss("npc_dota_miniboss", Vector(-7680, 6336, 128))
+        self:BridgeEnsureBoss("npc_dota_miniboss", Vector(7616, -6464, 128))
+        return 30
+    end, 5)
+end
+
+-- spawn a boss at pos unless one of that kind is already alive near it (Roshan anywhere)
+function CDotaCS:BridgeEnsureBoss(name, pos)
+    local radius = (name == "npc_dota_roshan") and 30000 or 1500
+    for _, u in ipairs(FindUnitsInRadius(DOTA_TEAM_NEUTRALS, pos, nil, radius, DOTA_UNIT_TARGET_TEAM_BOTH,
+        DOTA_UNIT_TARGET_ALL, DOTA_UNIT_TARGET_FLAG_INVULNERABLE + DOTA_UNIT_TARGET_FLAG_DEAD, FIND_ANY_ORDER, false)) do
+        if u:GetUnitName() == name then return end
+    end
+    self.bossRespawn = self.bossRespawn or {}
+    local key = name .. math.floor(pos.x)
+    local now = GameRules:GetGameTime()
+    if not self.bossRespawn[key] then self.bossRespawn[key] = now + (self.bossSeen and self.bossSeen[key] and 480 or 0) end
+    if now < self.bossRespawn[key] then return end
+    self.bossRespawn[key] = nil
+    self.bossSeen = self.bossSeen or {}
+    self.bossSeen[key] = true
+    pcall(CreateUnitByName, name, pos, true, nil, nil, DOTA_TEAM_NEUTRALS)
+end
+
+-- CS player's level, K/D and HP in Dota: name label and how much he is worth when killed
+function CDotaCS:BridgeProxyStats(unit, name, lvl, kills, deaths, maxhp)
+    local label = string.format("%s  ур.%d  %d/%d", name:gsub("_", " "), lvl, kills, deaths)
+    if unit.csLabel ~= label then
+        unit.csLabel = label
+        if not name:find("^WC3_") then unit:SetCustomHealthLabel(label, 110, 170, 255) end
+    end
+    if maxhp and maxhp > 0 and unit:GetMaxHealth() ~= maxhp then
+        unit:SetBaseMaxHealth(maxhp); unit:SetMaxHealth(maxhp)
+    end
+    if unit.csLevel ~= lvl then
+        unit.csLevel = lvl
+        unit:SetDeathXP(100 + lvl * 40)
+        unit:SetMinimumGoldBounty(200 + lvl * 20); unit:SetMaximumGoldBounty(200 + lvl * 20)
+    end
+end
+
+-- Dota chat -> CS chat (E M name text)
+function CDotaCS:BridgeChat(pid, text)
+    if not self.bridge or not text or text == "" or text:sub(1, 1) == "-" then return end
+    local name = (PlayerResource:GetPlayerName(pid) or "dota"):gsub("%s", "_")
+    if name == "" then name = "dota" end
+    table.insert(self.bridge.outbox, "E M " .. name .. " " .. text:gsub("[\r\n]", " "))
 end
 
 function CDotaCS:BridgeToggle(pid, auto)
@@ -117,10 +168,11 @@ function CDotaCS:BridgeHeroLines()
             end
             -- visible effects on the hero (Rot cloud...)
             local fx = hero:HasModifier("modifier_pudge_rot") and "rot" or "-"
-            table.insert(lines, string.format("H %d %.1f %.1f %.1f %.3f %.3f %d %d %d %s %s %s %d",
+            table.insert(lines, string.format("H %d %.1f %.1f %.1f %.3f %.3f %d %d %d %s %s %s %d %d %d %d %d",
                 hero:entindex(), x, y, z, f.x, f.y,
                 hero:GetHealth(), hero:GetMaxHealth(), hero:IsAlive() and 1 or 0, name, act, fx,
-                self:BridgeVisibleToCS(hero) and 1 or 0))
+                self:BridgeVisibleToCS(hero) and 1 or 0,
+                hero:GetKills(), hero:GetDeaths(), hero:GetAssists(), hero:GetLevel()))
         end
     end
     return lines
@@ -201,7 +253,17 @@ function CDotaCS:BridgeResult(bridge, result)
                 count = count + 1
                 seen[slot] = true
                 self:BridgeUpdateProxy(bridge, slot, tonumber(x), tonumber(y), tonumber(fx), tonumber(fy), tonumber(hp), name)
+                -- level, kills, deaths, max HP of the CS player (newer plugin)
+                local lvl, k, d, mhp = line:match(" (%d+) (%d+) (%d+) (%d+)$")
+                local unit = bridge.proxies[slot]
+                if lvl and unit and not unit:IsNull() and name and name ~= "" then
+                    self:BridgeProxyStats(unit, name, tonumber(lvl), tonumber(k), tonumber(d), tonumber(mhp))
+                end
             end
+        elseif kind == "M " then
+            -- CS chat -> Dota chat
+            local who, text = line:match("^M (%S+) (.+)$")
+            if who then GameRules:SendCustomMessage("<font color='#5ab4ff'>[КС] " .. who:gsub("_", " ") .. ":</font> " .. text, 0, 0) end
         elseif kind == "T " then
             -- a CS grenade went off: knock down trees around it
             local x, y, z, r = line:match("^T (%-?[%d%.]+) (%-?[%d%.]+) (%-?[%d%.]+) (%d+)")
@@ -269,6 +331,9 @@ function CDotaCS:BridgeUpdateProxy(bridge, slot, x, y, fx, fy, hp, name)
     end
 
     -- HP comes from CS2
+    if hp and hp > unit:GetMaxHealth() then
+        unit:SetBaseMaxHealth(hp); unit:SetMaxHealth(hp)
+    end
     if hp and hp > 0 then
         unit:SetHealth(math.min(hp, unit:GetMaxHealth()))
     end
@@ -450,6 +515,23 @@ function CDotaCS:BridgeGrenade(bridge, kind, x, y, z, slot)
     elseif kind == "invis" then
         -- invisibility rune picked up in CS2: invisible in Dota for 45 s (sentry/dust still reveal), shooting breaks it
         if owner == bridge.proxies[slot] then owner:AddNewModifier(owner, nil, "modifier_cs_smoked", { duration = 45 }) end
+    elseif kind == "ward" then
+        -- observer ward bought in CS2: real Dota vision for the CS team (fog of war opens in CS2 too)
+        local ok, ward = pcall(CreateUnitByName, "npc_dota_observer_wards", pos, false, owner, owner, team)
+        if ok and ward then
+            ward:AddNewModifier(owner, nil, "modifier_kill", { duration = 360 })
+            pcall(function() ward:AddNewModifier(owner, nil, "modifier_item_buff_ward", { duration = 360 }) end)
+            EmitSoundOnLocationWithCaster(pos, "DOTA_Item.ObserverWard.Activate", owner)
+        end
+    elseif kind == "capture" then
+        -- CS player captured an outpost or a watcher: it now gives vision to the CS team
+        for _, e in ipairs(Entities:FindAllInSphere(pos, 450)) do
+            local cls = e.GetClassname and e:GetClassname() or ""
+            if (cls:find("watch_tower") or cls:find("lantern")) and e.SetTeam and e:GetTeamNumber() ~= team then
+                e:SetTeam(team)
+                self:Msg("Ксник захватил " .. (cls:find("lantern") and "фонарь" or "аутпост") .. "!")
+            end
+        end
     elseif kind == "smoke" then
         local g = CS_GRENADES.smoke
         local thinker = CreateModifierThinker(owner, nil, "modifier_cs_grenade_thinker", { duration = g.duration + 1 }, pos, team, false)
@@ -495,7 +577,32 @@ function CDotaCS:BridgeHeroHit(bridge, heroId, damage, attackerSlot, weapon)
 
     local weaponName = (weapon or ""):gsub("^weapon_", "")
     local wasAlive = hero:IsAlive()
+    local bountyGold = hero.GetGoldBounty and hero:GetGoldBounty() or 0
+    local bountyXp = hero.GetDeathXP and hero:GetDeathXP() or 0
     self:DealDamage(attacker, -1, hero, damage * CS_BRIDGE_DAMAGE_TO_DOTA, weaponName)
+    if wasAlive and not hero:IsAlive() and attacker ~= hero and attacker.csSlot then
+        -- last hit by a CS player: gold and experience go to him in CS2 (E R slot gold xp unit)
+        local uname = hero:GetUnitName():gsub("npc_dota_hero_", ""):gsub("npc_dota_", "")
+        if hero:IsRealHero() then
+            bountyGold = 150 + hero:GetLevel() * 15
+            bountyXp = 100 + hero:GetLevel() * 30
+        end
+        table.insert(bridge.outbox, string.format("E R %s %d %d %s", attacker.csSlot, bountyGold, bountyXp, uname))
+        if uname == "roshan" then
+            table.insert(bridge.outbox, string.format("E AEGIS %s", attacker.csSlot))
+            self:Msg("Ксник убил Рошана и забрал Аегис!")
+            local p = hero:GetAbsOrigin()
+            hero:SetContextThink("cs_aegis_cleanup", function()
+                for _, drop in ipairs(Entities:FindAllByClassnameWithin("dota_item_drop", p, 600)) do
+                    local item = drop:GetContainedItem()
+                    if item and item:GetAbilityName() == "item_aegis" then UTIL_Remove(item); UTIL_Remove(drop) end
+                end
+            end, 0.5)
+        elseif uname:find("miniboss") then
+            table.insert(bridge.outbox, string.format("E SHARD %s", attacker.csSlot))
+            self:Msg("Ксник убил Тормента!")
+        end
+    end
     if wasAlive and not hero:IsAlive() and hero:IsRealHero() then
         -- killed by a CS player: tell CS2 (score + message)
         local heroName = hero:GetUnitName():gsub("npc_dota_hero_", "")

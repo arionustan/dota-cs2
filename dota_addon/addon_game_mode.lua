@@ -122,6 +122,7 @@ end
 function CDotaCS:OnPlayerChat(keys)
     local text = string.lower(keys.text or "")
     local pid = keys.playerid
+    if self.BridgeChat then self:BridgeChat(pid, keys.text) end
 
     if text == "-cs" then
         self:MakeCSPlayer(pid)

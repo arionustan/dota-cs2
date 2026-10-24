@@ -24,11 +24,16 @@ public partial class DotaCSBridge
     private static readonly RuneKind WaterRune = new("water", "Вода: +40 HP", "rune_water", "Rune.Water", 0f, System.Drawing.Color.FromArgb(255, 60, 180, 255), "#40b0ff");
 
     // Dota 7.41 rune spots (dota_item_rune_spawner_*)
-    private static readonly (float X, float Y, float Z, bool Power)[] RuneSpots =
+    private static readonly RuneKind WisdomRune = new("wisdom", "Мудрость: +900 опыта", "rune_goldxp", "Rune.Arcane", 0f, System.Drawing.Color.FromArgb(255, 170, 90, 255), "#b070ff");
+
+    // Dota 7.41 rune spots (dota_item_rune_spawner_*) and wisdom shrines (npc_dota_xp_fountain). Type: p power, b bounty, w wisdom
+    private static readonly (float X, float Y, float Z, char Type)[] RuneSpots =
     {
-        (-1640f, 1112f, 41f, true), (1180f, -1216f, 57f, true),
-        (-996f, 4431f, 169f, false), (595f, -4660f, 169f, false),
+        (-1640f, 1112f, 41f, 'p'), (1180f, -1216f, 57f, 'p'),
+        (-996f, 4431f, 169f, 'b'), (595f, -4660f, 169f, 'b'),
+        (-8088f, 768f, 39f, 'w'), (8167f, -1142f, 38f, 'w'),
     };
+    private const float WisdomRuneEvery = 420f;   // Dota: every 7 minutes
     private const float PowerRuneEvery = 90f, BountyRuneEvery = 120f, RuneTouch = 85f;
 
     private class RuneProp { public RuneKind Kind = null!; public CDynamicProp? Prop; public COmniLight? Light; public CPointWorldText? Label; }
@@ -50,20 +55,20 @@ public partial class DotaCSBridge
     private bool RuneActive(int slot, string id) => _runeUntil.TryGetValue((slot, id), out var t) && Server.CurrentTime < t;
 
     // double damage rune: CS damage to Dota counts twice
-    private float DmgMult(int slot) => RuneActive(slot, "dd") ? 2f : 1f;
+    private float DmgMult(int slot) => (RuneActive(slot, "dd") ? 2f : 1f) * LevelDmg(slot);
 
     private void UpdateRunes()
     {
         var now = Server.CurrentTime;
-        var humans = Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot && p.PawnIsAlive && p.PlayerPawn.Value != null).ToList();
+        var humans = Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot && p.PawnIsAlive && p.PlayerPawn.Value != null && !IsHolding(p.Slot)).ToList();
 
         for (var i = 0; i < RuneSpots.Length; i++)
         {
             var s = RuneSpots[i];
             if (!_runes.ContainsKey(i))
             {
-                if (!_runeNext.TryGetValue(i, out var at)) _runeNext[i] = at = now + 5f;
-                if (now >= at) SpawnRune(i, s.Power ? (Rng.Next(8) == 0 ? WaterRune : PowerRunes[Rng.Next(PowerRunes.Length)]) : BountyRune);
+                if (!_runeNext.TryGetValue(i, out var at)) _runeNext[i] = at = now + (s.Type == 'w' ? WisdomRuneEvery : 5f);
+                if (now >= at) SpawnRune(i, s.Type == 'p' ? (Rng.Next(8) == 0 ? WaterRune : PowerRunes[Rng.Next(PowerRunes.Length)]) : s.Type == 'w' ? WisdomRune : BountyRune);
                 continue;
             }
             foreach (var p in humans)
@@ -84,9 +89,9 @@ public partial class DotaCSBridge
                 pawn.VelocityModifier = 1.45f;
                 Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_flVelocityModifier");
             }
-            if (RuneActive(p.Slot, "regen") && pawn.Health < 100 && (int)(now * 4) != (int)((now - Interval) * 4))
+            if (RuneActive(p.Slot, "regen") && pawn.Health < MaxHp(pawn) && (int)(now * 4) != (int)((now - Interval) * 4))
             {
-                pawn.Health = Math.Min(100, pawn.Health + 3);
+                pawn.Health = Math.Min(MaxHp(pawn), pawn.Health + Math.Max(3, MaxHp(pawn) * 3 / 100));
                 Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
             }
         }
@@ -157,7 +162,7 @@ public partial class DotaCSBridge
         }
         catch (Exception e) { Logger.LogWarning("DotaCS rune: {Error}", e.Message); }
         _runes[i] = r;
-        if (s.Power) Announce($" {ChatColors.Gold}Появилась руна:{ChatColors.Default} {kind.Name}");
+        if (s.Type != 'b') Announce($" {ChatColors.Gold}Появилась руна:{ChatColors.Default} {kind.Name}");
     }
 
     private void PickRune(CCSPlayerController p, int i)
@@ -168,7 +173,7 @@ public partial class DotaCSBridge
         if (r.Light != null && r.Light.IsValid) r.Light.Remove();
         if (r.Label != null && r.Label.IsValid) r.Label.Remove();
         var s = RuneSpots[i];
-        _runeNext[i] = Server.CurrentTime + (s.Power ? PowerRuneEvery : BountyRuneEvery);
+        _runeNext[i] = Server.CurrentTime + (s.Type == 'p' ? PowerRuneEvery : s.Type == 'w' ? WisdomRuneEvery : BountyRuneEvery);
         var pawn = p.PlayerPawn.Value!;
         var k = r.Kind;
         PlayDotaSound(k.Sound, new Vector(s.X, s.Y, s.Z + 40));
@@ -179,11 +184,14 @@ public partial class DotaCSBridge
                 var money = p.InGameMoneyServices;
                 if (money != null) { money.Account += 500; Utilities.SetStateChanged(p, "CCSPlayerController", "m_pInGameMoneyServices"); }
                 break;
+            case "wisdom":
+                AddXp(p, 900);
+                break;
             case "water":
-                pawn.Health = Math.Min(100, pawn.Health + 40); Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
+                pawn.Health = Math.Min(MaxHp(pawn), pawn.Health + 40); Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
                 break;
             case "shield":
-                pawn.Health = Math.Max(pawn.Health, 100) + 50; Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
+                pawn.Health = Math.Max(pawn.Health, MaxHp(pawn)) + 50; Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
                 pawn.ArmorValue = 100; Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_ArmorValue");
                 break;
             case "arcane":
@@ -243,10 +251,10 @@ public partial class DotaCSBridge
             {
                 var pawn = p.PlayerPawn.Value!;
                 var o = pawn.AbsOrigin;
-                if (o == null || Dist2(pool.X, pool.Y, o) > LotusTouch * LotusTouch || pawn.Health >= 100) continue;
+                if (o == null || Dist2(pool.X, pool.Y, o) > LotusTouch * LotusTouch || pawn.Health >= MaxHp(pawn)) continue;
                 _lotusCount[i]--; if (_lotusCount[i] == LotusMax - 1) _lotusNext[i] = now + LotusGrow;
                 SyncLotusProps(i);
-                pawn.Health = 100; Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
+                pawn.Health = MaxHp(pawn); Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
                 PlayDotaSound("Lotus.Heal", new Vector(pool.X, pool.Y, pool.Z + 40));
                 p.PrintToCenterHtml("<font color='#ff9ad0' class='fontSize-l'>Лотос: здоровье восстановлено</font>", 3);
                 break;

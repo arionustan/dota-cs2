@@ -52,7 +52,7 @@ public partial class DotaCSBridge
         {
             var now = DateTime.UtcNow;
             _rPlayers = lines.Where(l => l.StartsWith("P ")).ToList();
-            _rToDota.AddRange(lines.Where(l => l.StartsWith("D ") || l.StartsWith("T ") || l.StartsWith("G ")));
+            _rToDota.AddRange(lines.Where(l => l.StartsWith("D ") || l.StartsWith("T ") || l.StartsWith("G ") || l.StartsWith("M ")));
             _rCsTime = now;
             var outLines = new List<string>();
             if ((now - _rDotaTime).TotalSeconds < 2.0) { outLines.AddRange(_rHeroes); outLines.AddRange(_rBuildings); }

@@ -30,7 +30,7 @@ namespace DotaCSBridge;
 public partial class DotaCSBridge : BasePlugin
 {
     public override string ModuleName => "DotaCS Bridge";
-    public override string ModuleVersion => "0.13.0";
+    public override string ModuleVersion => "0.15.0";
 
     private const string BridgeUrl = "http://127.0.0.1:3000/cs";
     private const float Interval = 0.05f;
@@ -48,7 +48,8 @@ public partial class DotaCSBridge : BasePlugin
         Timeout = TimeSpan.FromSeconds(1)
     };
 
-    private record HeroState(string Id, float X, float Y, float Z, float Fx, float Fy, int Hp, int MaxHp, bool Alive, string Name, string Act, string Effect, bool Visible = true);
+    private record HeroState(string Id, float X, float Y, float Z, float Fx, float Fy, int Hp, int MaxHp, bool Alive, string Name, string Act, string Effect, bool Visible = true,
+        int Kills = 0, int Deaths = 0, int Assists = 0, int Level = 1);
 
     // filled by the HTTP thread, used on the game thread
     private readonly ConcurrentQueue<string> _incoming = new();
@@ -75,7 +76,7 @@ public partial class DotaCSBridge : BasePlugin
         RegisterEventHandler<EventSmokegrenadeDetonate>((ev, _) => { SendGrenade("smoke", ev.X, ev.Y, ev.Z, ev.Userid); return HookResult.Continue; });
         RegisterEventHandler<EventMolotovDetonate>((ev, _) => { SendGrenade("fire", ev.X, ev.Y, ev.Z, ev.Userid); return HookResult.Continue; });
         AddCommand("css_faq", "DotaCS commands", (p, _) => { if (p != null) Faq(p); });
-        AddCommand("css_tp", "third person", (p, _) => p?.PrintToChat($" {ChatColors.Gold}Третье лицо:{ChatColors.Default} нажми F6 (ещё раз F6 вернёт первое лицо)"));
+        RegisterProgress();
         RegisterEventHandler<EventPlayerDeath>((ev, _) => { if (ev.Userid != null && ev.Userid.IsValid && !ev.Userid.IsBot) PlayStinger("killed"); return HookResult.Continue; });
         AddCommandListener("buy", OnBuy);
         AddCommandListener("autobuy", OnBuy);
@@ -111,7 +112,7 @@ public partial class DotaCSBridge : BasePlugin
         // test mode extras: endless ammo, lots of money, more grenades, no freeze time
         Server.ExecuteCommand("sv_infinite_ammo 1");
         Server.ExecuteCommand("mp_maxmoney 60000");
-        Server.ExecuteCommand("mp_startmoney 60000");
+        Server.ExecuteCommand("mp_startmoney 2000");   // real economy: money comes from last hits, kills and passive income (!money for tests)
         Server.ExecuteCommand("ammo_grenade_limit_total 6");
         Server.ExecuteCommand("mp_freezetime 0");
         Server.ExecuteCommand("mp_roundtime 60");
@@ -157,6 +158,7 @@ public partial class DotaCSBridge : BasePlugin
             UpdateTracers();
             UpdateHpBars();
             UpdateRunes();
+            UpdateProgress();
         }
         catch (Exception e)
         {
@@ -216,15 +218,17 @@ public partial class DotaCSBridge : BasePlugin
         var sb = new StringBuilder();
         foreach (var player in Utilities.GetPlayers())
         {
-            if (player == null || !player.IsValid || player.IsBot || !player.PawnIsAlive) continue;
+            if (player == null || !player.IsValid || player.IsBot || !player.PawnIsAlive || IsHolding(player.Slot)) continue;
             var pawn = player.PlayerPawn.Value;
             if (pawn == null || !pawn.IsValid) continue;
             var pos = pawn.AbsOrigin;
             if (pos == null) continue;
 
             double yaw = pawn.EyeAngles.Y * Math.PI / 180.0;
-            sb.AppendLine(string.Format(Inv, "P {0} {1:F1} {2:F1} {3:F1} {4:F3} {5:F3} 0 {6} {7}",
-                player.Slot, pos.X, pos.Y, pos.Z, Math.Cos(yaw), Math.Sin(yaw), pawn.Health, Safe(player.PlayerName)));
+            var ch = Hero(player.Slot);
+            sb.AppendLine(string.Format(Inv, "P {0} {1:F1} {2:F1} {3:F1} {4:F3} {5:F3} 0 {6} {7} {8} {9} {10} {11}",
+                player.Slot, pos.X, pos.Y, pos.Z, Math.Cos(yaw), Math.Sin(yaw), pawn.Health, Safe(player.PlayerName),
+                ch.Level, ch.Kills, ch.Deaths, MaxHp(pawn)));
         }
         while (_hits.TryDequeue(out var hit)) sb.AppendLine(hit);
         return sb.Length > 0 ? sb.ToString() : "none";
@@ -250,7 +254,8 @@ public partial class DotaCSBridge : BasePlugin
             // H heroId x y z fx fy hp maxhp alive name
             if (p.Length < 11 || p[0] != "H") continue;
             heroes[p[1]] = new HeroState(p[1], F(p[2]), F(p[3]), F(p[4]), F(p[5]), F(p[6]),
-                (int)F(p[7]), (int)F(p[8]), p[9] == "1", p[10], p.Length > 11 ? p[11] : "-", p.Length > 12 ? p[12] : "-", p.Length <= 13 || p[13] != "0");
+                (int)F(p[7]), (int)F(p[8]), p[9] == "1", p[10], p.Length > 11 ? p[11] : "-", p.Length > 12 ? p[12] : "-", p.Length <= 13 || p[13] != "0",
+                p.Length > 17 ? (int)F(p[14]) : 0, p.Length > 17 ? (int)F(p[15]) : 0, p.Length > 17 ? (int)F(p[16]) : 0, p.Length > 17 ? (int)F(p[17]) : 1);
         }
         _heroes = heroes;
         foreach (var raw in latest.Split('\n'))
@@ -531,9 +536,14 @@ public partial class DotaCSBridge : BasePlugin
     private void ApplyEvent(string[] e)
     {
         // E K hero killer weapon : a CS player killed a Dota hero
+        if (e.Length >= 6 && e[1] == "R") { OnReward(e); return; }
+        if (e.Length >= 3 && e[1] == "AEGIS") { OnAegis(e); return; }
+        if (e.Length >= 3 && e[1] == "SHARD") { OnShard(e); return; }
+        if (e.Length >= 4 && e[1] == "M") { OnDotaChat(e); return; }
         if (e.Length >= 4 && e[1] == "K")
         {
             _csScore++;
+            CountCsKill(e[3]);
             var weapon = e.Length > 4 ? " (" + e[4] + ")" : "";
             Announce($" {ChatColors.Blue}{Pretty(e[3])}{ChatColors.Default} убил {ChatColors.Red}{Pretty(e[2])}{ChatColors.Default}{weapon}");
             foreach (var p in Utilities.GetPlayers())
@@ -628,7 +638,7 @@ public partial class DotaCSBridge : BasePlugin
     private const int FountainHealPerTick = 3;     // every 0.05 s -> 60 HP/s
     private static readonly Vector[] Portals = { new(-6458, 7599, 256), new(6426, -7314, 256) };
     private const float PortalRadius = 140f;
-    private const float PortalTime = 2.0f;         // stand this long to teleport
+    private const float PortalTime = 6.0f;         // stand this long to teleport (Dota: 6 s channel)
     private readonly Dictionary<int, float> _portalSince = new();
     private readonly Dictionary<int, float> _portalCooldown = new();
     private int _spawnIndex;
@@ -641,6 +651,7 @@ public partial class DotaCSBridge : BasePlugin
         {
             var pawn = player.PlayerPawn.Value;
             if (!player.IsValid || pawn == null || !pawn.IsValid || !player.PawnIsAlive) return;
+            if (ProgressOnSpawn(player, pawn)) return;
             var spot = DireSpawns[_spawnIndex++ % DireSpawns.Length];
             pawn.Teleport(spot, new QAngle(0, 225, 0), new Vector(0, 0, 0));
             if (_night) { SendNightFade(player, true, 0.1f); ApplyWorldNight(true); }
@@ -667,7 +678,10 @@ public partial class DotaCSBridge : BasePlugin
             $" Гранаты бьют и по Доте: {ChatColors.Red}HE и молотов x4 урона{ChatColors.Default}, флешка ослепляет героев, дым даёт невидимость в Доте на 15 сек",
             $" Руны на местах рун Доты: подойди и коснись. Лотосы у пулов лотоса лечат до 100 HP",
             $" Портал: постой 2 сек в портале. Закупка только на фонтане Тьмы",
-            $" Чат: {ChatColors.Green}!faq{ChatColors.Default} это меню, {ChatColors.Green}!tp{ChatColors.Default} третье лицо",
+            $" {ChatColors.Green}F7/F8/F9/F10{ChatColors.Default} телепорт верх/мид/низ/база ($300, 3 сек)  {ChatColors.Green}F11{ChatColors.Default} байбек",
+            $" {ChatColors.Green}7{ChatColors.Default} хилка  {ChatColors.Green}8{ChatColors.Default} вард  {ChatColors.Green}9{ChatColors.Default} уровень и вещи. Покупка: !buy salve / !buy ward на фонтане или в секретной лавке",
+            $" Деньги и опыт за добивание крипов и героев, уровень даёт HP и урон. Рошан даёт Аегис, Тормент шард, стой 3 сек у аутпоста или фонаря чтобы захватить",
+            $" Чат: {ChatColors.Green}!faq{ChatColors.Default} это меню, {ChatColors.Green}!3p{ChatColors.Default} третье лицо, обычный чат видят и в Доте",
         };
         foreach (var l in lines) p.PrintToChat(l);
     }
@@ -740,8 +754,8 @@ public partial class DotaCSBridge : BasePlugin
     {
         if (player == null || !player.IsValid || player.IsBot) return HookResult.Continue;
         var pos = player.PlayerPawn.Value?.AbsOrigin;
-        if (pos != null && Dist2(pos, DireFountain) < FountainRadius * FountainRadius) return HookResult.Continue;
-        player.PrintToCenter("Закупка только на фонтане Тьмы");
+        if (pos != null && AtShop(pos)) return HookResult.Continue;
+        player.PrintToCenter("Закупка только на фонтане Тьмы или в секретной лавке");
         return HookResult.Handled;
     }
 
@@ -755,9 +769,10 @@ public partial class DotaCSBridge : BasePlugin
             if (pawn == null || pos == null) continue;
 
             // fountain heals
-            if (Dist2(pos, DireFountain) < FountainRadius * FountainRadius && pawn.Health < 100)
+            if (IsHolding(player.Slot)) continue;
+            if (Dist2(pos, DireFountain) < FountainRadius * FountainRadius && pawn.Health < MaxHp(pawn))
             {
-                pawn.Health = Math.Min(100, pawn.Health + FountainHealPerTick);
+                pawn.Health = Math.Min(MaxHp(pawn), pawn.Health + Math.Max(FountainHealPerTick, MaxHp(pawn) * 3 / 100));
                 Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
             }
 
@@ -768,8 +783,12 @@ public partial class DotaCSBridge : BasePlugin
             for (int i = 0; i < Portals.Length; i++)
                 if (Dist2(pos, Portals[i]) < PortalRadius * PortalRadius) at = i;
             if (at < 0 || (_portalCooldown.TryGetValue(slot, out var cd) && now < cd)) { _portalSince.Remove(slot); continue; }
-            if (!_portalSince.TryGetValue(slot, out var since)) { _portalSince[slot] = now; player.PrintToCenter("Портал: стой 2 секунды"); continue; }
-            if (now - since < PortalTime) continue;
+            if (!_portalSince.TryGetValue(slot, out var since)) { _portalSince[slot] = now; continue; }
+            if (now - since < PortalTime)
+            {
+                if ((int)(now * 4) != (int)((now - Interval) * 4)) player.PrintToCenterHtml($"<font color='#c080ff'>Врата: стой на месте</font> {Bar((now - since) / PortalTime)}", 1);
+                continue;
+            }
             var dest = Portals[1 - at];
             var dir = new Vector(-dest.X, -dest.Y, 0);                 // step out towards the map centre
             var len = (float)Math.Sqrt(dir.X * dir.X + dir.Y * dir.Y);
