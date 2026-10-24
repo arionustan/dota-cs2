@@ -29,9 +29,9 @@ public partial class DotaCSBridge
         (-1640f, 1112f, 41f, true), (1180f, -1216f, 57f, true),
         (-996f, 4431f, 169f, false), (595f, -4660f, 169f, false),
     };
-    private const float PowerRuneEvery = 90f, BountyRuneEvery = 120f, RuneTouch = 70f;
+    private const float PowerRuneEvery = 90f, BountyRuneEvery = 120f, RuneTouch = 85f;
 
-    private class RuneProp { public RuneKind Kind = null!; public CDynamicProp? Prop; public COmniLight? Light; }
+    private class RuneProp { public RuneKind Kind = null!; public CDynamicProp? Prop; public COmniLight? Light; public CPointWorldText? Label; }
     private readonly Dictionary<int, RuneProp> _runes = new();
     private readonly Dictionary<int, float> _runeNext = new();
     private readonly Dictionary<(int Slot, string Id), float> _runeUntil = new();
@@ -119,21 +119,40 @@ public partial class DotaCSBridge
                 prop.Collision.SolidType = SolidType_t.SOLID_NONE;
                 prop.DispatchSpawn();
                 prop.SetModel(FxModel(kind.Model));
-                prop.Teleport(new Vector(s.X, s.Y, s.Z + 10), new QAngle(0, Rng.Next(360), 0), null);
+                SetPropScale(prop, 1.6f);   // a bit bigger than in Dota, easy to spot from a CS player's height
+                prop.Teleport(new Vector(s.X, s.Y, s.Z + 30), new QAngle(0, Rng.Next(360), 0), null);
                 prop.AcceptInput("SetAnimation", null, null, "idle");
                 prop.AcceptInput("SetDefaultAnimation", null, null, "idle");
                 prop.Glow.GlowColorOverride = kind.Color;
-                prop.Glow.GlowRange = 900; prop.Glow.GlowRangeMin = 0; prop.Glow.GlowTeam = -1; prop.Glow.GlowType = 3;
+                prop.Glow.GlowRange = 3000; prop.Glow.GlowRangeMin = 0; prop.Glow.GlowTeam = -1; prop.Glow.GlowType = 3;
                 Utilities.SetStateChanged(prop, "CBaseModelEntity", "m_Glow");
                 r.Prop = prop;
             }
             var l = Utilities.CreateEntityByName<COmniLight>("light_omni2");
             if (l != null)
             {
-                l.Color = kind.Color; l.Brightness = 2.5f; l.Range = 260f; l.CastShadows = 0; l.Enabled = true;
+                l.Color = kind.Color; l.Brightness = 6f; l.Range = 420f; l.CastShadows = 0; l.Enabled = true;
                 l.DispatchSpawn();
                 l.Teleport(new Vector(s.X, s.Y, s.Z + 60), null, null);
                 r.Light = l;
+            }
+        }
+        catch (Exception e) { Logger.LogWarning("DotaCS rune: {Error}", e.Message); }
+        try
+        {
+            var t = Utilities.CreateEntityByName<CPointWorldText>("point_worldtext");
+            if (t != null)
+            {
+                t.MessageText = "РУНА: " + kind.Name;
+                t.Enabled = true; t.Fullbright = true;
+                t.FontSize = 60; t.WorldUnitsPerPx = 0.22f;
+                t.Color = kind.Color;
+                t.JustifyHorizontal = PointWorldTextJustifyHorizontal_t.POINT_WORLD_TEXT_JUSTIFY_HORIZONTAL_CENTER;
+                t.JustifyVertical = PointWorldTextJustifyVertical_t.POINT_WORLD_TEXT_JUSTIFY_VERTICAL_CENTER;
+                t.ReorientMode = PointWorldTextReorientMode_t.POINT_WORLD_TEXT_REORIENT_AROUND_UP;
+                t.DispatchSpawn();
+                t.Teleport(new Vector(s.X, s.Y, s.Z + 110), null, null);
+                r.Label = t;
             }
         }
         catch (Exception e) { Logger.LogWarning("DotaCS rune: {Error}", e.Message); }
@@ -147,6 +166,7 @@ public partial class DotaCSBridge
         _runes.Remove(i);
         if (r.Prop != null && r.Prop.IsValid) r.Prop.Remove();
         if (r.Light != null && r.Light.IsValid) r.Light.Remove();
+        if (r.Label != null && r.Label.IsValid) r.Label.Remove();
         var s = RuneSpots[i];
         _runeNext[i] = Server.CurrentTime + (s.Power ? PowerRuneEvery : BountyRuneEvery);
         var pawn = p.PlayerPawn.Value!;

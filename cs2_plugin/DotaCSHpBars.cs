@@ -8,7 +8,7 @@ namespace DotaCSBridge;
 public partial class DotaCSBridge
 {
     private const float HpBarRange = 1800f;      // bars only near CS players (world text is not free)
-    private const int HpBarSegments = 12;
+    private const int HpBarSegments = 10;
     private readonly Dictionary<string, CPointWorldText> _hpBar = new();
     private readonly Dictionary<string, string> _hpBarText = new();
 
@@ -41,7 +41,7 @@ public partial class DotaCSBridge
         {
             var frac = Math.Clamp(w.Hp / (float)w.Max, 0f, 1f);
             var filled = (int)Math.Ceiling(frac * HpBarSegments);
-            var text = new string('█', filled) + new string('░', HpBarSegments - filled);
+            var text = new string('█', filled) + new string('▁', HpBarSegments - filled);
             if (!_hpBar.TryGetValue(id, out var bar) || !bar.IsValid)
             {
                 try
@@ -51,8 +51,10 @@ public partial class DotaCSBridge
                     bar.MessageText = text;
                     bar.Enabled = true;
                     bar.Fullbright = true;
-                    bar.FontSize = w.Hero ? 34 : 24;
-                    bar.WorldUnitsPerPx = 0.25f;
+                    bar.FontSize = w.Hero ? 90 : 60;
+                    bar.WorldUnitsPerPx = w.Hero ? 0.22f : 0.2f;   // about 120 / 80 units wide
+                    bar.DrawBackground = true;
+                    bar.BackgroundBorderWidth = 2f; bar.BackgroundBorderHeight = 1f;
                     bar.JustifyHorizontal = PointWorldTextJustifyHorizontal_t.POINT_WORLD_TEXT_JUSTIFY_HORIZONTAL_CENTER;
                     bar.JustifyVertical = PointWorldTextJustifyVertical_t.POINT_WORLD_TEXT_JUSTIFY_VERTICAL_CENTER;
                     bar.ReorientMode = PointWorldTextReorientMode_t.POINT_WORLD_TEXT_REORIENT_AROUND_UP;

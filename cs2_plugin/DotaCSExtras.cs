@@ -452,11 +452,11 @@ public partial class DotaCSBridge
         {
             if (!u.Alive) continue;
             var (r, h) = UnitHitbox.TryGetValue(u.Model, out var hb) ? hb : (32f, 95f);
-            r = Math.Max(r, 22f) * 1.1f; h = Math.Max(h, 70f) * 1.05f;   // a little generous, like CS hitboxes
+            r = Math.Max(r * 1.5f, 34f); h = Math.Max(h * 1.3f, 90f);   // generous: Dota units move between updates, CS players expect forgiving hits
             var t = Math.Clamp(((u.X - sx) * dx + (u.Y - sy) * dy) / dxy, 0f, 1.02f);
             float px = sx + dx * t, py = sy + dy * t, pz = sz + dz * t;
             var ddx = px - u.X; var ddy = py - u.Y;
-            if (ddx * ddx + ddy * ddy > r * r || pz < u.Z - 10 || pz > u.Z + h) continue;
+            if (ddx * ddx + ddy * ddy > r * r || pz < u.Z - 25 || pz > u.Z + h) continue;
             if (t < bestT) { bestT = t; best = u; hitP = new Vector(px, py, pz); }
         }
         if (best == null) return false;
