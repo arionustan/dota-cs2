@@ -22,6 +22,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
+using CounterStrikeSharp.API.Modules.UserMessages;
 using Microsoft.Extensions.Logging;
 
 namespace DotaCSBridge;
@@ -245,6 +246,8 @@ public partial class DotaCSBridge : BasePlugin
                 (int)F(p[7]), (int)F(p[8]), p[9] == "1", p[10], p.Length > 11 ? p[11] : "-", p.Length > 12 ? p[12] : "-");
         }
         _heroes = heroes;
+        foreach (var raw in latest.Split('\n'))
+            if (raw.StartsWith("N ")) SetNight(raw.Trim() == "N 1");
         ParseUnits(latest);
         ParseBuildings(latest);
 
@@ -441,7 +444,8 @@ public partial class DotaCSBridge : BasePlugin
     // ------------------------------------------------------------ Pudge model
     private const float PudgeYawOffset = 0f;   // DMX models already face +X like CS
     private const bool UsePudgeModel = true;
-    private const float PudgeHitboxScale = 1.8f;
+    private const float PudgeScale = 0.95f;        // Pudge towers over CS players (was 0.55, the same as creeps)
+    private const float PudgeHitboxScale = 3.1f;   // hitboxes follow the bigger model
 
     private void HideBot(CCSPlayerController bot, CCSPlayerPawn pawn)
     {
@@ -475,7 +479,7 @@ public partial class DotaCSBridge : BasePlugin
             prop.Collision.SolidType = SolidType_t.SOLID_NONE;
             prop.DispatchSpawn();
             prop.SetModel(PudgeModel);
-            SetPropScale(prop, ModelScale);
+            SetPropScale(prop, PudgeScale);
             _heroProp[heroId] = prop;
             _heroAnim.Remove(heroId);
             return prop;
@@ -625,8 +629,39 @@ public partial class DotaCSBridge : BasePlugin
             if (!player.IsValid || pawn == null || !pawn.IsValid || !player.PawnIsAlive) return;
             var spot = DireSpawns[_spawnIndex++ % DireSpawns.Length];
             pawn.Teleport(spot, new QAngle(0, 225, 0), new Vector(0, 0, 0));
+            if (_night) SendNightFade(player, true, 0.1f);
         });
         return HookResult.Continue;
+    }
+
+    // ------------------------------------------------------------ day / night from Dota
+    private bool _night;
+
+    private void SetNight(bool night)
+    {
+        if (night == _night) return;
+        _night = night;
+        foreach (var p in Utilities.GetPlayers())
+            if (p.IsValid && !p.IsBot) SendNightFade(p, night, 3f);
+        Announce(night ? $" {ChatColors.Blue}В Доте наступила ночь{ChatColors.Default}, видно хуже"
+                       : $" {ChatColors.Gold}В Доте наступил день{ChatColors.Default}");
+    }
+
+    // a dark blue screen tint that stays until day (UM_Fade: duration and hold in 1/512 s)
+    private void SendNightFade(CCSPlayerController player, bool night, float seconds)
+    {
+        try
+        {
+            var msg = UserMessage.FromId(106);
+            msg.SetInt("duration", (int)(seconds * 512));
+            msg.SetInt("hold_time", night ? 0 : 0);
+            msg.SetInt("flags", night ? (0x2 | 0x8) : (0x1 | 0x10));   // out+stayout / in+purge
+            uint r = 8, g = 12, b = 40, a = night ? 150u : 0u;
+            msg.SetUInt("color", r | (g << 8) | (b << 16) | (a << 24));
+            var rf = new RecipientFilter { player };
+            msg.Send(rf);
+        }
+        catch (Exception e) { Logger.LogWarning("DotaCS: night fade failed: {Error}", e.Message); }
     }
 
     private HookResult OnBuy(CCSPlayerController? player, CommandInfo info)

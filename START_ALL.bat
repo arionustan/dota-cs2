@@ -106,6 +106,13 @@ start "DotaCS CS2 server" /D "%ADDON%cs2server" "%ADDON%cs2server\start_server.b
 echo Waiting 45 seconds for the server to load...
 timeout /t 45
 
+rem Dota side: the CS2 counter-terrorist model, compiled once (and again when the version file changes)
+set "DRC=C:\Program Files (x86)\Steam\steamapps\common\dota 2 beta\game\bin\win64\resourcecompiler.exe"
+if not exist "%ADDON%models\cs\cs_ct\_built_v1.txt" (
+  echo Compiling the counter-terrorist model for Dota, first time only...
+  "%DRC%" -i "%ADDON%models\cs\cs_ct\cs_ct.vmdl" > "%ADDON%models\cs\cs_ct\compile_log.txt" 2>&1
+  echo 1> "%ADDON%models\cs\cs_ct\_built_v1.txt"
+)
 echo [3/4] Starting Dota 2 tools with the DotaCS custom game...
 start "" "C:\Program Files (x86)\Steam\steamapps\common\dota 2 beta\game\bin\win64\dota2.exe" -addon dotacs -tools -steam -novid +dota_launch_custom_game dotacs dota
 

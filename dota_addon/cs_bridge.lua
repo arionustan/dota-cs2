@@ -130,6 +130,7 @@ function CDotaCS:BridgeTick(bridge)
 
     local lines = self:BridgeHeroLines()
     for _, l in ipairs(self:BridgeUnitLines(bridge)) do table.insert(lines, l) end
+    table.insert(lines, GameRules:IsDaytime() and "N 0" or "N 1")   -- day/night for CS2
     bridge.buildTick = ((bridge.buildTick or 0) + 1) % 10
     if bridge.buildTick == 0 then
         for _, l in ipairs(self:BridgeBuildingLines()) do table.insert(lines, l) end
@@ -248,7 +249,10 @@ function CDotaCS:BridgeUpdateProxy(bridge, slot, x, y, fx, fy, hp, name)
         end
     end
 
-    if name and name ~= "" then unit.csName = name end
+    if name and name ~= "" and unit.csName ~= name then
+        unit.csName = name
+        if not name:find("^WC3_") then unit:SetCustomHealthLabel(name, 110, 170, 255) end
+    end
 
     -- HP comes from CS2
     if hp and hp > 0 then
@@ -287,18 +291,70 @@ function CDotaCS:BridgeUpdateProxy(bridge, slot, x, y, fx, fy, hp, name)
         return
     end
 
-    -- run / idle animation, the position is set directly so Dota does not animate it by itself
-    local moved = (unit:GetAbsOrigin() - GetGroundPosition(target, unit)):Length2D()
-    if moved > 4 and not unit.wcRun then
-        unit:StartGesture(ACT_DOTA_RUN); unit.wcRun = true
-    elseif moved <= 4 and unit.wcRun then
-        unit:RemoveGesture(ACT_DOTA_RUN); unit.wcRun = false
+    -- CS2 sends a position ~10 times a second; the unit glides towards it every frame (see BridgeSmooth)
+    local goal = GetGroundPosition(target, unit)
+    local now = GameRules:GetGameTime()
+    if unit.csGoal then
+        local dt = now - (unit.csGoalTime or now)
+        local step = goal - unit.csGoal
+        step.z = 0
+        if dt > 0.02 then
+            local v = step / dt
+            if v:Length2D() > 600 then v = Vector(0, 0, 0) end       -- respawn / teleport
+            unit.csVel = (unit.csVel or Vector(0, 0, 0)) * 0.4 + v * 0.6
+        end
     end
-    unit:SetAbsOrigin(GetGroundPosition(target, unit))
+    unit.csGoal = goal
+    unit.csGoalTime = now
     local dir = Vector(fx, fy, 0)
-    if dir:Length2D() > 0.1 then
-        unit:SetForwardVector(dir:Normalized())
+    if dir:Length2D() > 0.1 then unit.csFace = dir:Normalized() end
+    if not unit.csSmoothing then
+        unit.csSmoothing = true
+        unit:SetAbsOrigin(goal)
+        unit:SetContextThink("cs_smooth", function() return self:BridgeSmooth(unit) end, 0)
     end
+end
+
+-- every frame: move the CS player towards where CS2 says he is (with a little prediction),
+-- so he walks smoothly instead of jumping 10 times a second
+function CDotaCS:BridgeSmooth(unit)
+    if not unit or unit:IsNull() then return nil end
+    local DT = 0.03
+    if not unit.csGoal or unit:IsCurrentlyHorizontalMotionControlled() or unit:IsCurrentlyVerticalMotionControlled() then
+        return DT
+    end
+    local now = GameRules:GetGameTime()
+    local age = now - (unit.csGoalTime or now)
+    local vel = unit.csVel or Vector(0, 0, 0)
+    if age > 0.3 then vel = Vector(0, 0, 0) end                    -- no news: he stopped
+    local pred = unit.csGoal + vel * math.min(age, 0.15)
+    local cur = unit:GetAbsOrigin()
+    local d = pred - cur
+    d.z = 0
+    local pos
+    if d:Length2D() > 450 then
+        pos = pred
+    else
+        pos = cur + d * math.min(1, DT * 12)
+    end
+    unit:SetAbsOrigin(GetGroundPosition(pos, unit))
+    -- turn smoothly
+    if unit.csFace then
+        local f = unit:GetForwardVector()
+        local nf = f + (unit.csFace - f) * 0.35
+        nf.z = 0
+        if nf:Length2D() > 0.01 then unit:SetForwardVector(nf:Normalized()) end
+    end
+    -- run animation with hysteresis, playback speed follows the real speed
+    local speed = vel:Length2D()
+    if speed > 60 and not unit.csRun then
+        unit:StartGestureWithPlaybackRate(ACT_DOTA_RUN, math.max(0.6, math.min(speed / 300, 1.6)))
+        unit.csRun = true
+    elseif speed < 20 and unit.csRun then
+        unit:RemoveGesture(ACT_DOTA_RUN)
+        unit.csRun = false
+    end
+    return DT
 end
 
 -- queue a command for CS2; only the newest freeze/teleport per player is kept, damage always adds up
@@ -347,6 +403,11 @@ function CDotaCS:BridgeRemoveProxy(bridge, slot, unit)
         local mod = unit:FindModifierByName("modifier_cs_proxy")
         if mod then mod.allowDeath = true end
         unit:Kill(nil, killer)
+    elseif unit:IsAlive() then
+        -- died in CS2 for another reason: play the death animation, no bounty
+        local mod = unit:FindModifierByName("modifier_cs_proxy")
+        if mod then mod.allowDeath = true end
+        unit:ForceKill(false)
     else
         UTIL_Remove(unit)
     end
@@ -364,6 +425,21 @@ function CDotaCS:BridgeHeroHit(bridge, heroId, damage, attackerSlot, weapon)
     if attacker ~= hero and weapon == "blademaster" then
         attacker:StartGesture(ACT_DOTA_ATTACK)
         EmitSoundOn("Hero_Juggernaut.Attack", hero)
+    elseif attacker ~= hero then
+        -- a CS player shoots: aim at the hero, play the shooting animation and a rifle shot (not every bullet)
+        local now = GameRules:GetGameTime()
+        if not attacker.csLastShot or now - attacker.csLastShot > 0.25 then
+            attacker.csLastShot = now
+            local d = hero:GetAbsOrigin() - attacker:GetAbsOrigin(); d.z = 0
+            if d:Length2D() > 1 then attacker.csFace = d:Normalized() end
+            attacker:RemoveGesture(ACT_DOTA_ATTACK)
+            attacker:StartGestureWithPlaybackRate(ACT_DOTA_ATTACK, 2)
+            EmitSoundOn("Hero_Sniper.attack", attacker)
+            local fx = ParticleManager:CreateParticle(CS_TRACER, PATTACH_CUSTOMORIGIN, attacker)
+            ParticleManager:SetParticleControl(fx, 0, attacker:GetAbsOrigin() + Vector(0, 0, 90))
+            ParticleManager:SetParticleControl(fx, 1, hero:GetAbsOrigin() + Vector(0, 0, 90))
+            ParticleManager:ReleaseParticleIndex(fx)
+        end
     end
 
     local weaponName = (weapon or ""):gsub("^weapon_", "")

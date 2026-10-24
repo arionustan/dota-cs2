@@ -56,6 +56,7 @@ function Precache(context)
     PrecacheUnitByNameSync("npc_cs_proxy", context)
     PrecacheUnitByNameSync("npc_wc3_blademaster", context)   -- WC3 hero model, created later by the bridge
     PrecacheResource("model", "models/wc3/blademaster/blademaster.vmdl", context)
+    PrecacheResource("model", "models/cs/cs_ct/cs_ct.vmdl", context)        -- CS2 counter-terrorist
     PrecacheResource("soundfile", "soundevents/game_sounds_heroes/game_sounds_juggernaut.vsndevts", context)
     PrecacheResource("particle", CS_TRACER, context)
     PrecacheResource("soundfile", "soundevents/game_sounds_heroes/game_sounds_sniper.vsndevts", context)
@@ -125,6 +126,12 @@ function CDotaCS:OnPlayerChat(keys)
         self:MakeCSPlayer(pid)
     elseif text == "-bridge" then
         self:BridgeToggle(pid)
+    elseif text == "-night" then
+        GameRules:SetTimeOfDay(0.8)      -- also darkens CS2 through the bridge
+        self:Msg("Ночь")
+    elseif text == "-day" then
+        GameRules:SetTimeOfDay(0.3)
+        self:Msg("День")
     elseif text == "-money" and GameRules:IsCheatMode() then
         self:AddMoney(pid, 10000)
     end

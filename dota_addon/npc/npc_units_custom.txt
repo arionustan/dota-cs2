@@ -7,8 +7,8 @@
 	"npc_cs_proxy"
 	{
 		"BaseClass"					"npc_dota_creature"
-		"Model"						"models/heroes/sniper/sniper.vmdl"
-		"ModelScale"				"1"
+		"Model"						"models/cs/cs_ct/cs_ct.vmdl"
+		"ModelScale"				"1.35"
 		"Level"						"1"
 		"ConsideredHero"			"1"
 		"SoundSet"					"Hero_Sniper"
