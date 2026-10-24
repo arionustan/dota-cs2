@@ -378,6 +378,64 @@ public partial class DotaCSBridge
         }
     }
 
+    // hitbox cylinders (radius, height) measured from the converted models at their CS scale
+    private static readonly Dictionary<string, (float R, float H)> UnitHitbox = new()
+    {
+        ["creep_bad_flagbearer"] = (28f, 40f),
+        ["creep_bad_melee"] = (28f, 40f),
+        ["creep_bad_siege"] = (47f, 86f),
+        ["creep_good_siege"] = (54f, 109f),
+        ["ice_giant01"] = (26f, 162f),
+        ["lane_dire_ranged"] = (19f, 95f),
+        ["n_creep_ancient_frog"] = (45f, 123f),
+        ["n_creep_ancient_frog_mage"] = (39f, 154f),
+        ["n_creep_beast"] = (34f, 85f),
+        ["n_creep_black_dragon"] = (57f, 185f),
+        ["n_creep_black_drake"] = (57f, 186f),
+        ["n_creep_centaur_lrg"] = (43f, 113f),
+        ["n_creep_centaur_med"] = (34f, 108f),
+        ["n_creep_forest_troll_berserker"] = (27f, 86f),
+        ["n_creep_forest_troll_high_priest"] = (29f, 101f),
+        ["n_creep_froglet"] = (36f, 109f),
+        ["n_creep_froglet_mage"] = (35f, 111f),
+        ["n_creep_furbolg_disrupter"] = (30f, 91f),
+        ["n_creep_gargoyle"] = (69f, 162f),
+        ["n_creep_ghost_a"] = (21f, 107f),
+        ["n_creep_ghost_b"] = (18f, 95f),
+        ["n_creep_gnoll"] = (27f, 97f),
+        ["n_creep_golem_b"] = (24f, 88f),
+        ["n_creep_harpy_a"] = (55f, 129f),
+        ["n_creep_harpy_b"] = (55f, 129f),
+        ["n_creep_kobold_a"] = (37f, 86f),
+        ["n_creep_kobold_b"] = (34f, 75f),
+        ["n_creep_kobold_c"] = (22f, 61f),
+        ["n_creep_ogre_lrg"] = (35f, 131f),
+        ["n_creep_ogre_med"] = (32f, 94f),
+        ["n_creep_satyr_a"] = (36f, 115f),
+        ["n_creep_satyr_b"] = (27f, 115f),
+        ["n_creep_satyr_c"] = (29f, 120f),
+        ["n_creep_satyr_spawn_a"] = (49f, 111f),
+        ["n_creep_satyr_spawn_b"] = (46f, 111f),
+        ["n_creep_tadpole_c"] = (56f, 113f),
+        ["n_creep_tadpole_ranged_v2"] = (37f, 118f),
+        ["n_creep_tadpole_v2"] = (37f, 130f),
+        ["n_creep_thunder_lizard_big"] = (69f, 142f),
+        ["n_creep_thunder_lizard_small"] = (66f, 117f),
+        ["n_creep_trio_model"] = (70f, 129f),
+        ["n_creep_troll_dark_a"] = (40f, 105f),
+        ["n_creep_troll_dark_b"] = (37f, 136f),
+        ["n_creep_vulture_a"] = (38f, 102f),
+        ["n_creep_vulture_b"] = (25f, 103f),
+        ["n_creep_worg_large"] = (43f, 89f),
+        ["n_creep_worg_small"] = (24f, 56f),
+        ["neutral_creep_golem_a"] = (29f, 119f),
+        ["pine_cone"] = (38f, 127f),
+        ["radiant_flagbearer"] = (19f, 72f),
+        ["radiant_melee"] = (19f, 72f),
+        ["radiant_ranged"] = (24f, 95f),
+        ["roshan"] = (75f, 180f),
+    };
+
     // ------------------------------------------------------------ shooting creeps, neutrals and Roshan
     // bullets fly through Dota units (they have no hitbox in CS), so test the shot line against a cylinder per unit
     private bool TryHitUnit(CCSPlayerController shooter, float x, float y, float z, float dmg, string weapon)
@@ -393,9 +451,8 @@ public partial class DotaCSBridge
         foreach (var u in _units.Values)
         {
             if (!u.Alive) continue;
-            var big = u.Model == "roshan" || u.Model.Contains("dragon") || u.Model.Contains("lizard_big") || u.Model.Contains("siege") || u.Model.Contains("lrg") || u.Model.Contains("golem");
-            var r = big ? 75f : 32f;
-            var h = big ? 190f : 95f;
+            var (r, h) = UnitHitbox.TryGetValue(u.Model, out var hb) ? hb : (32f, 95f);
+            r = Math.Max(r, 22f) * 1.1f; h = Math.Max(h, 70f) * 1.05f;   // a little generous, like CS hitboxes
             var t = Math.Clamp(((u.X - sx) * dx + (u.Y - sy) * dy) / dxy, 0f, 1.02f);
             float px = sx + dx * t, py = sy + dy * t, pz = sz + dz * t;
             var ddx = px - u.X; var ddy = py - u.Y;
@@ -404,24 +461,41 @@ public partial class DotaCSBridge
         }
         if (best == null) return false;
         _hits.Enqueue(string.Format(Inv, "D {0} {1} {2} {3}", best.Id, dmg, shooter.Slot, weapon));
-        Blood(hitP);
+        Blood(hitP, new Vector(dx, dy, dz));
         return true;
     }
 
-    private void Blood(Vector at)
+    // CS2 blood: a spray in the direction of the shot plus a splat on the ground
+    private static readonly string[] BloodFx =
     {
-        try
+        "particles/blood_impact/blood_impact_high.vpcf",
+        "particles/blood_impact/blood_impact_high_vis_spray.vpcf",
+        "particles/blood_impact/blood_impact_high_ground_decal.vpcf",
+    };
+
+    private void Blood(Vector at, Vector? dir = null)
+    {
+        var yaw = 0f; var pitch = 0f;
+        if (dir != null)
         {
-            var fx = Utilities.CreateEntityByName<CParticleSystem>("info_particle_system");
-            if (fx == null) return;
-            fx.EffectName = "particles/blood_impact/blood_impact_heavy.vpcf";
-            fx.StartActive = true;
-            fx.DispatchSpawn();
-            fx.Teleport(at, null, null);
-            fx.AcceptInput("Start");
-            AddTimer(2f, () => { if (fx.IsValid) fx.Remove(); });
+            yaw = (float)(Math.Atan2(dir.Y, dir.X) * 180 / Math.PI);
+            pitch = (float)(-Math.Atan2(dir.Z, Math.Sqrt(dir.X * dir.X + dir.Y * dir.Y)) * 180 / Math.PI);
         }
-        catch { }
+        foreach (var name in BloodFx)
+        {
+            try
+            {
+                var fx = Utilities.CreateEntityByName<CParticleSystem>("info_particle_system");
+                if (fx == null) continue;
+                fx.EffectName = name;
+                fx.StartActive = true;
+                fx.DispatchSpawn();
+                fx.Teleport(at, new QAngle(pitch, yaw, 0), null);
+                fx.AcceptInput("Start");
+                AddTimer(3f, () => { if (fx.IsValid) fx.Remove(); });
+            }
+            catch { }
+        }
     }
 
     // ------------------------------------------------------------ footsteps of Dota units near CS players

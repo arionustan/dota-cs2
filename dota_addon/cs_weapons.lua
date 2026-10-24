@@ -85,10 +85,10 @@ CS_GRENADE_TOTAL = 4
 CS_GRENADE_RANGE = 1000   -- max throw distance
 CS_GRENADE_SPEED = 900    -- flight speed
 CS_GRENADES = {
-    he      = { cat = "grenades", name = "HE граната",   price = 300, max = 1, radius = 350, damage = 98 },
+    he      = { cat = "grenades", name = "HE граната",   price = 300, max = 1, radius = 350, damage = 392 },   -- x4 (was 98)
     flash   = { cat = "grenades", name = "Флешка",       price = 200, max = 2, radius = 650, blind = 3.5 },
     smoke   = { cat = "grenades", name = "Дымовая",      price = 300, max = 1, radius = 300, duration = 18 },
-    molotov = { cat = "grenades", name = "Молотов",      price = 400, max = 1, radius = 250, duration = 7, dps = 40 },
+    molotov = { cat = "grenades", name = "Молотов",      price = 400, max = 1, radius = 250, duration = 7, dps = 160 },   -- x4 (was 40)
     decoy   = { cat = "grenades", name = "Ложная",       price = 50,  max = 1, duration = 15 },
 }
 CS_GRENADE_ORDER = { "he", "flash", "smoke", "molotov", "decoy" }

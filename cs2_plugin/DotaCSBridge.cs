@@ -48,7 +48,7 @@ public partial class DotaCSBridge : BasePlugin
         Timeout = TimeSpan.FromSeconds(1)
     };
 
-    private record HeroState(string Id, float X, float Y, float Z, float Fx, float Fy, int Hp, int MaxHp, bool Alive, string Name, string Act, string Effect);
+    private record HeroState(string Id, float X, float Y, float Z, float Fx, float Fy, int Hp, int MaxHp, bool Alive, string Name, string Act, string Effect, bool Visible = true);
 
     // filled by the HTTP thread, used on the game thread
     private readonly ConcurrentQueue<string> _incoming = new();
@@ -71,6 +71,11 @@ public partial class DotaCSBridge : BasePlugin
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
         RegisterEventHandler<EventBulletImpact>(OnBulletImpact);
         RegisterEventHandler<EventHegrenadeDetonate>(OnHeDetonate);
+        RegisterEventHandler<EventFlashbangDetonate>((ev, _) => { SendGrenade("flash", ev.X, ev.Y, ev.Z, ev.Userid); return HookResult.Continue; });
+        RegisterEventHandler<EventSmokegrenadeDetonate>((ev, _) => { SendGrenade("smoke", ev.X, ev.Y, ev.Z, ev.Userid); return HookResult.Continue; });
+        RegisterEventHandler<EventMolotovDetonate>((ev, _) => { SendGrenade("fire", ev.X, ev.Y, ev.Z, ev.Userid); return HookResult.Continue; });
+        AddCommand("css_faq", "DotaCS commands", (p, _) => { if (p != null) Faq(p); });
+        AddCommand("css_tp", "third person", (p, _) => p?.PrintToChat($" {ChatColors.Gold}Третье лицо:{ChatColors.Default} нажми F6 (ещё раз F6 вернёт первое лицо)"));
         RegisterEventHandler<EventPlayerDeath>((ev, _) => { if (ev.Userid != null && ev.Userid.IsValid && !ev.Userid.IsBot) PlayStinger("killed"); return HookResult.Continue; });
         AddCommandListener("buy", OnBuy);
         AddCommandListener("autobuy", OnBuy);
@@ -150,6 +155,7 @@ public partial class DotaCSBridge : BasePlugin
             UpdateHooks();
             UpdateCsPlayers();
             UpdateTracers();
+            UpdateHpBars();
         }
         catch (Exception e)
         {
@@ -243,7 +249,7 @@ public partial class DotaCSBridge : BasePlugin
             // H heroId x y z fx fy hp maxhp alive name
             if (p.Length < 11 || p[0] != "H") continue;
             heroes[p[1]] = new HeroState(p[1], F(p[2]), F(p[3]), F(p[4]), F(p[5]), F(p[6]),
-                (int)F(p[7]), (int)F(p[8]), p[9] == "1", p[10], p.Length > 11 ? p[11] : "-", p.Length > 12 ? p[12] : "-");
+                (int)F(p[7]), (int)F(p[8]), p[9] == "1", p[10], p.Length > 11 ? p[11] : "-", p.Length > 12 ? p[12] : "-", p.Length <= 13 || p[13] != "0");
         }
         _heroes = heroes;
         foreach (var raw in latest.Split('\n'))
@@ -394,6 +400,13 @@ public partial class DotaCSBridge : BasePlugin
             var heroPos = new Vector(hero.X, hero.Y, hero.Z);
             var yaw = (float)(Math.Atan2(hero.Fy, hero.Fx) * 180.0 / Math.PI);
 
+            if (hero.Alive && !hero.Visible)
+            {
+                // fog of war: the CS team has no vision of this hero in Dota, hide model and hitbox
+                prop?.Teleport(new Vector(hero.X, hero.Y, hero.Z - 3000), null, null);
+                pawn.Teleport(new Vector(hero.X, hero.Y, hero.Z - 3000), null, new Vector(0, 0, 0));
+                continue;
+            }
             if (!hero.Alive)
             {
                 // dead in Dota: Pudge plays his death animation where he fell, the hitbox goes under the map
@@ -632,6 +645,29 @@ public partial class DotaCSBridge : BasePlugin
             if (_night) SendNightFade(player, true, 0.1f);
         });
         return HookResult.Continue;
+    }
+
+    // ------------------------------------------------------------ grenades go to Dota (G kind x y z slot)
+    private void SendGrenade(string kind, float x, float y, float z, CCSPlayerController? who)
+    {
+        var slot = who != null && who.IsValid ? who.Slot : -1;
+        _hits.Enqueue(string.Format(Inv, "G {0} {1:F0} {2:F0} {3:F0} {4}", kind, x, y, z, slot));
+    }
+
+    // ------------------------------------------------------------ !faq
+    private void Faq(CCSPlayerController p)
+    {
+        string[] lines =
+        {
+            $" {ChatColors.Gold}DotaCS: команды и кнопки",
+            $" {ChatColors.Green}F1{ChatColors.Default} AK  {ChatColors.Green}F2{ChatColors.Default} AWP  {ChatColors.Green}F3{ChatColors.Default} гранаты  {ChatColors.Green}F4{ChatColors.Default} дигл  {ChatColors.Green}F5{ChatColors.Default} M4",
+            $" {ChatColors.Green}F6{ChatColors.Default} третье лицо вкл/выкл  {ChatColors.Green}V{ChatColors.Default} полёт  {ChatColors.Green}K{ChatColors.Default} переподключиться",
+            $" {ChatColors.Green}H{ChatColors.Default} спрятать худ  {ChatColors.Green}J{ChatColors.Default} спрятать оружие  {ChatColors.Green}O{ChatColors.Default} чистый экран для записи",
+            $" Гранаты бьют и по Доте: {ChatColors.Red}HE и молотов x4 урона{ChatColors.Default}, флешка ослепляет героев, дым даёт невидимость в Доте на 15 сек",
+            $" Портал: постой 2 сек в портале. Закупка только на фонтане Тьмы",
+            $" Чат: {ChatColors.Green}!faq{ChatColors.Default} это меню, {ChatColors.Green}!tp{ChatColors.Default} третье лицо",
+        };
+        foreach (var l in lines) p.PrintToChat(l);
     }
 
     // ------------------------------------------------------------ day / night from Dota

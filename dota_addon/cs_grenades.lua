@@ -5,10 +5,13 @@
 CS_FX = {
     projectile = "particles/units/heroes/hero_alchemist/alchemist_unstable_concoction_projectile.vpcf",
     he         = "particles/units/heroes/hero_lina/lina_spell_light_strike_array.vpcf",
+    he_blast   = "particles/units/heroes/hero_techies/techies_land_mine_explode.vpcf",
     flash      = "particles/units/heroes/hero_keeper_of_the_light/keeper_of_the_light_blinding_light_aoe.vpcf",
     smoke      = "particles/units/heroes/hero_riki/riki_smokebomb.vpcf",
     fire       = "particles/units/heroes/hero_ember_spirit/ember_spirit_flameguard.vpcf",
 }
+
+CS_SMOKE_INVIS_TIME = 15
 
 CS_SND = {
     he      = "Hero_Techies.LandMine.Detonate",
@@ -191,15 +194,20 @@ local function UnitsAround(pos, radius)
 end
 
 -- HE: damage falls off with distance, hurts everyone like in CS (also yourself)
-function CDotaCS:GrenadeHE(owner, ownerPid, pos, g)
+function CDotaCS:GrenadeHE(owner, ownerPid, pos, g, enemiesOnly)
     local fx = ParticleManager:CreateParticle(CS_FX.he, PATTACH_WORLDORIGIN, nil)
     ParticleManager:SetParticleControl(fx, 0, pos)
     ParticleManager:SetParticleControl(fx, 1, Vector(g.radius, 1, 1))
     ParticleManager:ReleaseParticleIndex(fx)
     EmitSoundOnLocationWithCaster(pos, CS_SND.he, owner)
 
+    -- big and visible: Lina's light strike plus Techies' blast
+    local fx2 = ParticleManager:CreateParticle(CS_FX.he_blast, PATTACH_WORLDORIGIN, nil)
+    ParticleManager:SetParticleControl(fx2, 0, pos)
+    ParticleManager:ReleaseParticleIndex(fx2)
     for _, u in pairs(UnitsAround(pos, g.radius)) do
-        if u:IsAlive() and not u:IsBuilding() then
+        local skip = enemiesOnly and owner and (u:GetTeamNumber() == owner:GetTeamNumber() or u.csSlot)
+        if u:IsAlive() and not u:IsBuilding() and not skip then
             local d = (u:GetAbsOrigin() - pos):Length2D()
             local dmg = g.damage * (1 - d / g.radius)
             if dmg > 1 and owner and not owner:IsNull() then
@@ -246,6 +254,13 @@ function CDotaCS:GrenadeSmoke(owner, thinker, pos, g)
     EmitSoundOnLocationWithCaster(pos, CS_SND.smoke, owner)
 
     self.smokes[thinker] = { pos = pos, radius = g.radius }
+    if owner and not owner:IsNull() then
+        for _, u in pairs(UnitsAround(pos, g.radius)) do
+            if u:GetTeamNumber() == owner:GetTeamNumber() and u:IsAlive() then
+                u:AddNewModifier(u, nil, "modifier_cs_smoke_invis", { duration = CS_SMOKE_INVIS_TIME })
+            end
+        end
+    end
 
     -- put out fire that is under the smoke
     for fireThinker, fire in pairs(self.fires) do
@@ -277,7 +292,7 @@ function CDotaCS:GrenadeSmoke(owner, thinker, pos, g)
 end
 
 -- Molotov: fire on the ground that burns everyone standing in it
-function CDotaCS:GrenadeMolotov(owner, ownerPid, thinker, pos, g)
+function CDotaCS:GrenadeMolotov(owner, ownerPid, thinker, pos, g, enemiesOnly)
     -- landed in smoke: goes out right away
     for _, smoke in pairs(self.smokes) do
         if (smoke.pos - pos):Length2D() < smoke.radius then
@@ -304,7 +319,8 @@ function CDotaCS:GrenadeMolotov(owner, ownerPid, thinker, pos, g)
             return nil
         end
         for _, u in pairs(UnitsAround(pos, g.radius)) do
-            if u:IsAlive() and not u:IsBuilding() and owner and not owner:IsNull() then
+            local skip = enemiesOnly and owner and not owner:IsNull() and (u:GetTeamNumber() == owner:GetTeamNumber() or u.csSlot)
+            if u:IsAlive() and not u:IsBuilding() and owner and not owner:IsNull() and not skip then
                 self:DealDamage(owner, ownerPid, u, g.dps * tick, g.name)
             end
         end

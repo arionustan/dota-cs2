@@ -117,12 +117,23 @@ function CDotaCS:BridgeHeroLines()
             end
             -- visible effects on the hero (Rot cloud...)
             local fx = hero:HasModifier("modifier_pudge_rot") and "rot" or "-"
-            table.insert(lines, string.format("H %d %.1f %.1f %.1f %.3f %.3f %d %d %d %s %s %s",
+            table.insert(lines, string.format("H %d %.1f %.1f %.1f %.3f %.3f %d %d %d %s %s %s %d",
                 hero:entindex(), x, y, z, f.x, f.y,
-                hero:GetHealth(), hero:GetMaxHealth(), hero:IsAlive() and 1 or 0, name, act, fx))
+                hero:GetHealth(), hero:GetMaxHealth(), hero:IsAlive() and 1 or 0, name, act, fx,
+                self:BridgeVisibleToCS(hero) and 1 or 0))
         end
     end
     return lines
+end
+
+-- fog of war: can the CS team (enemies of the Dota player) see this unit right now?
+function CDotaCS:BridgeVisibleToCS(unit)
+    local bridge = self.bridge
+    if not bridge then return true end
+    local csTeam = self:BridgeEnemyTeam(bridge)
+    if unit:GetTeamNumber() == csTeam then return true end
+    if unit:IsInvisible() and not unit:HasModifier("modifier_truesight") then return false end
+    return IsLocationVisible(csTeam, unit:GetAbsOrigin())
 end
 
 function CDotaCS:BridgeTick(bridge)
@@ -195,6 +206,9 @@ function CDotaCS:BridgeResult(bridge, result)
             -- a CS grenade went off: knock down trees around it
             local x, y, z, r = line:match("^T (%-?[%d%.]+) (%-?[%d%.]+) (%-?[%d%.]+) (%d+)")
             if x then GridNav:DestroyTreesAroundPoint(ToDota(tonumber(x), tonumber(y)), tonumber(r), true) end
+        elseif kind == "G " then
+            local gk, gx, gy, gz, gslot = line:match("^G (%a+) (%-?[%d%.]+) (%-?[%d%.]+) (%-?[%d%.]+) (%-?%d+)")
+            if gk then self:BridgeGrenade(bridge, gk, tonumber(gx), tonumber(gy), tonumber(gz), gslot) end
         elseif kind == "D " then
             local heroId, dmg, attackerSlot, weapon = line:match("^D (%d+) (%-?[%d%.]+) (%d+) ?(%S*)")
             if heroId then
@@ -414,6 +428,34 @@ function CDotaCS:BridgeRemoveProxy(bridge, slot, unit)
 end
 
 ------------------------------------------------------------
+-- CS2 grenades in Dota: HE and molotov (x4 damage), flash blinds heroes, smoke = 15 s invisibility
+------------------------------------------------------------
+function CDotaCS:BridgeGrenade(bridge, kind, x, y, z, slot)
+    local owner = bridge.proxies[slot]
+    if not owner or owner:IsNull() then
+        -- thrower not in Dota (dead or not spawned yet): use any CS player, effects still happen
+        for _, p in pairs(bridge.proxies) do if p and not p:IsNull() then owner = p break end end
+    end
+    if not owner then return end
+    local pos = GetGroundPosition(ToDota(x, y), nil)
+    local team = owner:GetTeamNumber()
+    if kind == "he" then
+        self:GrenadeHE(owner, -1, pos, CS_GRENADES.he, true)
+    elseif kind == "flash" then
+        self:GrenadeFlash(owner, pos, CS_GRENADES.flash)
+    elseif kind == "fire" then
+        local g = CS_GRENADES.molotov
+        local thinker = CreateModifierThinker(owner, nil, "modifier_cs_grenade_thinker", { duration = g.duration + 1 }, pos, team, false)
+        self:GrenadeMolotov(owner, -1, thinker, pos, g, true)
+    elseif kind == "smoke" then
+        local g = CS_GRENADES.smoke
+        local thinker = CreateModifierThinker(owner, nil, "modifier_cs_grenade_thinker", { duration = g.duration + 1 }, pos, team, false)
+        self:GrenadeSmoke(owner, thinker, pos, g)
+        if owner.csSlot then owner:AddNewModifier(owner, nil, "modifier_cs_smoke_invis", { duration = CS_SMOKE_INVIS_TIME }) end
+    end
+end
+
+------------------------------------------------------------
 -- CS players shooting Dota heroes
 ------------------------------------------------------------
 function CDotaCS:BridgeHeroHit(bridge, heroId, damage, attackerSlot, weapon)
@@ -422,6 +464,11 @@ function CDotaCS:BridgeHeroHit(bridge, heroId, damage, attackerSlot, weapon)
 
     local attacker = bridge.proxies[attackerSlot]
     if not attacker or attacker:IsNull() then attacker = hero end -- unknown shooter: still apply damage
+    -- a CS player can't hurt his own side (Dire creeps, towers...)
+    if attacker ~= hero and attacker:GetTeamNumber() == hero:GetTeamNumber() then return end
+    -- grenade damage comes with the G lines (bigger, area), not from the invisible hitbox bot
+    local w = weapon or ""
+    if w:find("hegrenade") or w:find("inferno") or w:find("molotov") or w:find("incgrenade") then return end
     if attacker ~= hero and weapon == "blademaster" then
         attacker:StartGesture(ACT_DOTA_ATTACK)
         EmitSoundOn("Hero_Juggernaut.Attack", hero)
@@ -469,7 +516,7 @@ function CDotaCS:BridgeUnitLines(bridge)
                 FIND_CLOSEST, false)
             for _, u in ipairs(found) do
                 local id = u:entindex()
-                if not seen[id] and not u.csSlot and #lines < CS_BRIDGE_MAX_UNITS then
+                if not seen[id] and not u.csSlot and #lines < CS_BRIDGE_MAX_UNITS and self:BridgeVisibleToCS(u) then
                     seen[id] = true
                     local model = (u:GetModelName() or ""):match("([^/]+)%.vmdl$")
                     if model then

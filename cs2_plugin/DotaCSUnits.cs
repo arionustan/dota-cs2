@@ -36,6 +36,7 @@ public partial class DotaCSBridge
         PrecacheTrees(m);
         PrecacheBuildingsAndFx(m);
         foreach (var n in UnitModels) m.AddResource(UnitModelPath(n));
+        foreach (var b in BloodFx) m.AddResource(b);
     }
 
     // ------------------------------------------------------------ units (U lines)
@@ -199,13 +200,15 @@ public partial class DotaCSBridge
     }
 
     // ------------------------------------------------------------ red outline on Dota heroes
+    private const int GlowRange = 700;
+
     private static void SetGlow(CDynamicProp prop, System.Drawing.Color color)
     {
         try
         {
             if (prop.Glow.GlowColorOverride == color) return;
             prop.Glow.GlowColorOverride = color;
-            prop.Glow.GlowRange = 2500;
+            prop.Glow.GlowRange = GlowRange;   // CS players see the outline only when close
             prop.Glow.GlowRangeMin = 0;
             prop.Glow.GlowTeam = -1;
             prop.Glow.GlowType = 3;
@@ -228,10 +231,10 @@ public partial class DotaCSBridge
             {
                 if (fx != null && fx.IsValid) fx.Remove();
                 _rotFx.Remove(heroId);
-                if (prop != null) SetGlow(prop, System.Drawing.Color.FromArgb(255, 255, 40, 40));
+                if (prop != null) SetGlow(prop, System.Drawing.Color.FromArgb(255, 150, 35, 35));
                 return;
             }
-            if (prop != null) SetGlow(prop, System.Drawing.Color.FromArgb(255, 90, 255, 40));
+            if (prop != null) SetGlow(prop, System.Drawing.Color.FromArgb(255, 70, 140, 40));
             if (fx == null || !fx.IsValid)
             {
                 fx = StartFx(FxRot, new Vector(hero.X, hero.Y, hero.Z + 10), 0f, 250f);

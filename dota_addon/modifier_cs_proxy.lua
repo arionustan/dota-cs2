@@ -1,6 +1,6 @@
 -- On a CS2 player shown in Dota.
 -- * never dies from Dota damage by itself: the damage is sent to CS2, CS2 decides
--- * always visible to the enemy team, so Dota players can target it
+-- * collides with units like a hero, so it can be blocked and hit
 
 modifier_cs_proxy = class({})
 
@@ -11,7 +11,6 @@ function modifier_cs_proxy:RemoveOnDeath() return true end
 function modifier_cs_proxy:CheckState()
     return {
         [MODIFIER_STATE_PROVIDES_VISION] = true,
-        [MODIFIER_STATE_NO_UNIT_COLLISION] = true,
     }
 end
 

@@ -2841,6 +2841,7 @@ public partial class DotaCSBridge
     private HookResult OnHeDetonate(EventHegrenadeDetonate ev, GameEventInfo info)
     {
         _hits.Enqueue(string.Format(Inv, "T {0:F0} {1:F0} {2:F0} 220", ev.X, ev.Y, ev.Z));
+        SendGrenade("he", ev.X, ev.Y, ev.Z, ev.Userid);
         return HookResult.Continue;
     }
 }

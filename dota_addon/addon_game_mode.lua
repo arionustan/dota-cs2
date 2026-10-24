@@ -28,6 +28,7 @@ LinkLuaModifier("modifier_cs_grenade_thinker", "modifiers/modifier_cs_grenade_th
 LinkLuaModifier("modifier_cs_blind", "modifiers/modifier_cs_blind", LUA_MODIFIER_MOTION_NONE)
 LinkLuaModifier("modifier_cs_smoked", "modifiers/modifier_cs_smoked", LUA_MODIFIER_MOTION_NONE)
 LinkLuaModifier("modifier_cs_proxy", "modifiers/modifier_cs_proxy", LUA_MODIFIER_MOTION_NONE)
+LinkLuaModifier("modifier_cs_smoke_invis", "modifiers/modifier_cs_smoke_invis", LUA_MODIFIER_MOTION_NONE)
 
 -- CS settings
 _G.CS_START_MONEY = 800
@@ -126,6 +127,10 @@ function CDotaCS:OnPlayerChat(keys)
         self:MakeCSPlayer(pid)
     elseif text == "-bridge" then
         self:BridgeToggle(pid)
+    elseif text == "-faq" or text == "!faq" then
+        self:Msg("DotaCS: -night / -day ночь и день (в КС тоже), -bridge мост вкл/выкл, -cs играть ксником прямо в Доте")
+        self:Msg("Гранаты из КС: HE и молотов x4 урона, флешка слепит героя (промахи и почти нет обзора), дым даёт ксникам 15 сек невидимости")
+        self:Msg("Ксники видят в КС только то, что видит их команда в Доте (туман войны)")
     elseif text == "-night" then
         GameRules:SetTimeOfDay(0.8)      -- also darkens CS2 through the bridge
         self:Msg("Ночь")
