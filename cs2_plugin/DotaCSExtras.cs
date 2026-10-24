@@ -460,7 +460,7 @@ public partial class DotaCSBridge
             if (t < bestT) { bestT = t; best = u; hitP = new Vector(px, py, pz); }
         }
         if (best == null) return false;
-        _hits.Enqueue(string.Format(Inv, "D {0} {1} {2} {3}", best.Id, dmg, shooter.Slot, weapon));
+        _hits.Enqueue(string.Format(Inv, "D {0} {1} {2} {3}", best.Id, dmg * DmgMult(shooter.Slot), shooter.Slot, weapon));
         Blood(hitP, new Vector(dx, dy, dz));
         return true;
     }

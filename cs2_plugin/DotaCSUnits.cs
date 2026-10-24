@@ -37,6 +37,7 @@ public partial class DotaCSBridge
         PrecacheBuildingsAndFx(m);
         foreach (var n in UnitModels) m.AddResource(UnitModelPath(n));
         foreach (var b in BloodFx) m.AddResource(b);
+        PrecacheRunes(m);
     }
 
     // ------------------------------------------------------------ units (U lines)

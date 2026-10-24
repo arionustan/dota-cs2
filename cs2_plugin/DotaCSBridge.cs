@@ -130,7 +130,7 @@ public partial class DotaCSBridge : BasePlugin
             var heroId = _heroBot.FirstOrDefault(kv => kv.Value == victim.Slot).Key;
             if (heroId == null) return HookResult.Continue;
 
-            _hits.Enqueue(string.Format(Inv, "D {0} {1} {2} {3}", heroId, ev.DmgHealth, attacker.Slot, ev.Weapon));
+            _hits.Enqueue(string.Format(Inv, "D {0} {1} {2} {3}", heroId, ev.DmgHealth * DmgMult(attacker.Slot), attacker.Slot, ev.Weapon));
         }
         catch (Exception e)
         {
@@ -156,6 +156,7 @@ public partial class DotaCSBridge : BasePlugin
             UpdateCsPlayers();
             UpdateTracers();
             UpdateHpBars();
+            UpdateRunes();
         }
         catch (Exception e)
         {
@@ -664,6 +665,7 @@ public partial class DotaCSBridge : BasePlugin
             $" {ChatColors.Green}F6{ChatColors.Default} третье лицо вкл/выкл  {ChatColors.Green}V{ChatColors.Default} полёт  {ChatColors.Green}K{ChatColors.Default} переподключиться",
             $" {ChatColors.Green}H{ChatColors.Default} спрятать худ  {ChatColors.Green}J{ChatColors.Default} спрятать оружие  {ChatColors.Green}O{ChatColors.Default} чистый экран для записи",
             $" Гранаты бьют и по Доте: {ChatColors.Red}HE и молотов x4 урона{ChatColors.Default}, флешка ослепляет героев, дым даёт невидимость в Доте на 15 сек",
+            $" Руны на местах рун Доты: подойди и коснись. Лотосы у пулов лотоса лечат до 100 HP",
             $" Портал: постой 2 сек в портале. Закупка только на фонтане Тьмы",
             $" Чат: {ChatColors.Green}!faq{ChatColors.Default} это меню, {ChatColors.Green}!tp{ChatColors.Default} третье лицо",
         };

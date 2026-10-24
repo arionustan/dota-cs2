@@ -447,6 +447,9 @@ function CDotaCS:BridgeGrenade(bridge, kind, x, y, z, slot)
         local g = CS_GRENADES.molotov
         local thinker = CreateModifierThinker(owner, nil, "modifier_cs_grenade_thinker", { duration = g.duration + 1 }, pos, team, false)
         self:GrenadeMolotov(owner, -1, thinker, pos, g, true)
+    elseif kind == "invis" then
+        -- invisibility rune picked up in CS2: invisible in Dota for 45 s (sentry/dust still reveal), shooting breaks it
+        if owner == bridge.proxies[slot] then owner:AddNewModifier(owner, nil, "modifier_cs_smoked", { duration = 45 }) end
     elseif kind == "smoke" then
         local g = CS_GRENADES.smoke
         local thinker = CreateModifierThinker(owner, nil, "modifier_cs_grenade_thinker", { duration = g.duration + 1 }, pos, team, false)
@@ -473,6 +476,7 @@ function CDotaCS:BridgeHeroHit(bridge, heroId, damage, attackerSlot, weapon)
         attacker:StartGesture(ACT_DOTA_ATTACK)
         EmitSoundOn("Hero_Juggernaut.Attack", hero)
     elseif attacker ~= hero then
+        if attacker:HasModifier("modifier_cs_smoked") then attacker:RemoveModifierByName("modifier_cs_smoked") end
         -- a CS player shoots: aim at the hero, play the shooting animation and a rifle shot (not every bullet)
         local now = GameRules:GetGameTime()
         if not attacker.csLastShot or now - attacker.csLastShot > 0.25 then

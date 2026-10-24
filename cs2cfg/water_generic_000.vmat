@@ -1,0 +1,21 @@
+// DotaCS: river water with the CS2 water shader (reflections, refraction, depth fog)
+// the old simple version is water_generic_000_simple.vmat
+Layer0
+{
+	shader "csgo_water.vfx"
+
+	F_FRESNEL 1
+	g_flBumpStrength "2.5"
+	g_flNormalUvScale "420.0"
+	g_flWorldUvScale "1.0"
+	g_vExtraTexCoordScroll "[0.020 0.008 0.000 0.000]"
+	g_flReflectionAmount "0.85"
+	g_flRefractionAmount "0.75"
+	g_vReflectionTint "[0.80 0.86 0.86 0.000000]"
+	g_vRefractionTint "[0.62 0.80 0.78 0.000000]"
+	g_flWaterDepth "40.0"
+	g_flWaterStart "1.0"
+	g_vWaterFogColor "[0.10 0.28 0.30 0.000000]"
+	TextureNormal "models/dota_map/dotacs_water_normal.png"
+	TextureNoise "models/dota_map/dotacs_water_normal.png"
+}

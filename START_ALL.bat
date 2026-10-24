@@ -72,6 +72,14 @@ if not exist "%CONT%\models\dota_bld\_v1.txt" (
   for /r "%CONT%\models\dota_bld" %%F in (*.vmdl) do "%RC%" -i "%%F" >nul 2>&1
   echo 1> "%CONT%\models\dota_bld\_v1.txt"
 )
+if not exist "%CONT%\models\dota_fx\_v1.txt" (
+  echo Unpacking runes and lotus pools...
+  if not exist "%CONT%\models\dota_fx" mkdir "%CONT%\models\dota_fx"
+  for %%Z in ("%PK%\fx*.zip") do tar -xf "%%~Z" -C "%CONT%\models\dota_fx"
+  echo Compiling runes and lotus pools...
+  for /r "%CONT%\models\dota_fx" %%F in (*.vmdl) do "%RC%" -i "%%F" >nul 2>&1
+  echo 1> "%CONT%\models\dota_fx\_v1.txt"
+)
 if not exist "%CONT%\particles\_v1.txt" (
   echo Unpacking Dota particles...
   if not exist "%CONT%\particles" mkdir "%CONT%\particles"

@@ -57,7 +57,7 @@ public partial class DotaCSBridge
             var dmg = WeaponDamage.TryGetValue(key, out var d) ? d : 25f;
             if (TryHitUnit(shooter, ev.X, ev.Y, ev.Z, dmg, weapon)) return HookResult.Continue;
             if (hit == null) return HookResult.Continue;
-            if (!hit.Invuln) _hits.Enqueue(string.Format(Inv, "D {0} {1} {2} {3}", hit.Id, dmg, shooter.Slot, weapon));
+            if (!hit.Invuln) _hits.Enqueue(string.Format(Inv, "D {0} {1} {2} {3}", hit.Id, dmg * DmgMult(shooter.Slot), shooter.Slot, weapon));
 
             // show the building's HP to the shooter (at most twice a second)
             if (!_buildingMsg.TryGetValue(shooter.Slot, out var t) || Server.CurrentTime - t > 0.5f)
