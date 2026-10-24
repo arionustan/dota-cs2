@@ -96,6 +96,18 @@ for %%D in ("%CSC%" "%CSS%") do (
 
 python "%ADDON%maptools\patch_map.py"
 
+rem Keep the CS2 server copy on the same version as your CS2, otherwise CS2 says "client is out of date"
+set "CV="
+set "SV="
+for /f "tokens=2 delims==" %%A in ('findstr /b "PatchVersion=" "%CSC%\steam.inf"') do set "CV=%%A"
+for /f "tokens=2 delims==" %%A in ('findstr /b "PatchVersion=" "%CSS%\steam.inf"') do set "SV=%%A"
+if "%CV%"=="%SV%" goto server_version_ok
+echo CS2 was updated: your CS2 %CV%, server %SV%. Updating the server, this can take a few minutes...
+"C:\cs2server\steamcmd\steamcmd.exe" +force_install_dir "C:\cs2server\cs2" +login anonymous +app_update 730 +quit
+powershell -ExecutionPolicy Bypass -Command "$gi='C:\cs2server\cs2\game\csgo\gameinfo.gi'; $t=Get-Content $gi -Raw; if ($t -notmatch 'csgo/addons/metamod') { $t=$t -replace '(?m)^([ \t]*)(Game_LowViolence\s+csgo_lv[^\r\n]*)', \"`$1`$2`r`n`$1Game`tcsgo/addons/metamod\"; Set-Content $gi $t -NoNewline; 'Metamod line added' }"
+for /f "tokens=2 delims==" %%A in ('findstr /b "PatchVersion=" "%CSS%\steam.inf"') do set "SV=%%A"
+echo Server is now %SV%
+:server_version_ok
 echo [1/4] Starting the bridge...
 start "DotaCS bridge" /D "%ADDON%bridge" cmd /k "chcp 65001 >nul & python bridge.py"
 timeout /t 2 /nobreak >nul
