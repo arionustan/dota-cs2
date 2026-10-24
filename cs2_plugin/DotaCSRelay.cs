@@ -52,7 +52,7 @@ public partial class DotaCSBridge
         {
             var now = DateTime.UtcNow;
             _rPlayers = lines.Where(l => l.StartsWith("P ")).ToList();
-            _rToDota.AddRange(lines.Where(l => l.StartsWith("D ") || l.StartsWith("T ")));
+            _rToDota.AddRange(lines.Where(l => l.StartsWith("D ") || l.StartsWith("T ") || l.StartsWith("G ")));
             _rCsTime = now;
             var outLines = new List<string>();
             if ((now - _rDotaTime).TotalSeconds < 2.0) { outLines.AddRange(_rHeroes); outLines.AddRange(_rBuildings); }
@@ -70,7 +70,7 @@ public partial class DotaCSBridge
         lock (_relayLock)
         {
             var now = DateTime.UtcNow;
-            _rHeroes = lines.Where(l => l.StartsWith("H ") || l.StartsWith("U ")).ToList();
+            _rHeroes = lines.Where(l => l.StartsWith("H ") || l.StartsWith("U ") || l.StartsWith("N ")).ToList();
             var b = lines.Where(l => l.StartsWith("B ")).ToList();
             if (b.Count > 0) _rBuildings = b;
             _rToCs.AddRange(lines.Where(l => l.StartsWith("C ") || l.StartsWith("E ")));
