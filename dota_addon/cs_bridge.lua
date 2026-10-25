@@ -160,7 +160,8 @@ function CDotaCS:BridgeHeroLines()
             local ab = hero:GetCurrentActiveAbility()
             if ab and not ab:IsNull() then
                 local an = ab:GetAbilityName()
-                act = (an == "pudge_meat_hook") and "hook" or (an == "pudge_dismember") and "ult" or "cast"
+                act = (an == "pudge_meat_hook") and "hook" or (an == "pudge_dismember") and "ult"
+                    or (ab:GetAbilityType() == DOTA_ABILITY_TYPE_ULTIMATE) and "ult" or "cast"
             elseif hero:IsStunned() then
                 act = "stun"
             elseif hero:IsAttacking() then

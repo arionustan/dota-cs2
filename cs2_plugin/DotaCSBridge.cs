@@ -82,7 +82,7 @@ public partial class DotaCSBridge : BasePlugin
         AddCommandListener("autobuy", OnBuy);
         AddCommandListener("rebuy", OnBuy);
         RegisterListener<Listeners.OnMapStart>(_ => SetupServer());
-        RegisterListener<Listeners.OnServerPrecacheResources>(m => { m.AddResource(PudgeModel); PrecacheExtra(m); });
+        RegisterListener<Listeners.OnServerPrecacheResources>(m => { m.AddResource(PudgeModel); PrecacheExtra(m); PrecacheHeroes(m); });
         AddTimer(Interval, Tick, TimerFlags.REPEAT);
         AddTimer(30f, SetupServer, TimerFlags.REPEAT);   // keep the settings even if a config resets them
         SetupServer();
@@ -402,7 +402,7 @@ public partial class DotaCSBridge : BasePlugin
             if (!bot.PawnIsAlive) { bot.Respawn(); continue; }
 
             CDynamicProp? prop = null;
-            if (UsePudgeModel) { HideBot(bot, pawn); prop = PropFor(heroId); }
+            if (UsePudgeModel) { HideBot(bot, pawn, hero.Name == "pudge" || !HeroModelNames.Contains(hero.Name) ? PudgeHitboxScale : HeroHitboxScale); prop = PropFor(heroId, hero.Name); }
             var heroPos = new Vector(hero.X, hero.Y, hero.Z);
             var yaw = (float)(Math.Atan2(hero.Fy, hero.Fx) * 180.0 / Math.PI);
 
@@ -437,10 +437,11 @@ public partial class DotaCSBridge : BasePlugin
                     Math.Abs(hero.X - last.X) + Math.Abs(hero.Y - last.Y) > 1f)
                     _heroMoveTime[heroId] = Server.CurrentTime;
                 var moving = _heroMoveTime.TryGetValue(heroId, out var mt) && Server.CurrentTime - mt < 0.25f;
+                var isPudge = !_heroModelOf.TryGetValue(heroId, out var hm) || hm == PudgeModel;
                 var anim = hero.Act switch
                 {
-                    "hook" => "hook",
-                    "cast" => "hook",
+                    "hook" => isPudge ? "hook" : "cast",
+                    "cast" => isPudge ? "hook" : "cast",
                     "ult" => "ult",
                     "stun" => "stun",
                     "attack" => "attack",
@@ -466,7 +467,7 @@ public partial class DotaCSBridge : BasePlugin
     private const float PudgeScale = 0.95f;        // Pudge towers over CS players (was 0.55, the same as creeps)
     private const float PudgeHitboxScale = 3.1f;   // hitboxes follow the bigger model
 
-    private void HideBot(CCSPlayerController bot, CCSPlayerPawn pawn)
+    private void HideBot(CCSPlayerController bot, CCSPlayerPawn pawn, float hitboxScale)
     {
         if (pawn.Render.A != 0)
         {
@@ -480,7 +481,7 @@ public partial class DotaCSBridge : BasePlugin
                 var node = pawn.CBodyComponent?.SceneNode;
                 if (node != null)
                 {
-                    node.GetSkeletonInstance().Scale = PudgeHitboxScale;
+                    node.GetSkeletonInstance().Scale = hitboxScale;
                     Utilities.SetStateChanged(pawn, "CBaseEntity", "m_CBodyComponent");
                 }
             }
@@ -488,7 +489,38 @@ public partial class DotaCSBridge : BasePlugin
         }
     }
 
-    private CDynamicProp? PropFor(string heroId)
+    // Dota heroes with their own model in CS2 (tools/hero_build.py); everyone else is shown as Pudge
+    private static readonly string[] HeroModelNames =
+        { "axe", "juggernaut", "sniper", "crystal_maiden", "lina", "phantom_assassin", "drow_ranger", "nevermore" };
+    private const float HeroScale = 0.75f;
+    private const float HeroHitboxScale = 2.4f;   // other heroes are smaller than Pudge
+    private readonly Dictionary<string, string> _heroModelOf = new();
+
+    private static string HeroModelPath(string n) => $"models/dota_heroes/{n}/{n}.vmdl";
+
+    // only use a hero model if it really got compiled, so a failed compile never shows an error model
+    private static bool ModelExists(string path)
+    {
+        try
+        {
+            var rel = path.Replace('/', Path.DirectorySeparatorChar) + "_c";
+            foreach (var root in new[] { Path.Combine(Server.GameDirectory, "csgo"), Server.GameDirectory })
+                if (File.Exists(Path.Combine(root, rel))) return true;
+        }
+        catch { }
+        return false;
+    }
+
+    private static string ModelForHero(string name) =>
+        HeroModelNames.Contains(name) && ModelExists(HeroModelPath(name)) ? HeroModelPath(name) : PudgeModel;
+
+    private static void PrecacheHeroes(ResourceManifest m)
+    {
+        foreach (var n in HeroModelNames)
+            if (ModelExists(HeroModelPath(n))) m.AddResource(HeroModelPath(n));
+    }
+
+    private CDynamicProp? PropFor(string heroId, string heroName)
     {
         if (_heroProp.TryGetValue(heroId, out var prop) && prop.IsValid) return prop;
         try
@@ -497,8 +529,11 @@ public partial class DotaCSBridge : BasePlugin
             if (prop == null) return null;
             prop.Collision.SolidType = SolidType_t.SOLID_NONE;
             prop.DispatchSpawn();
-            prop.SetModel(PudgeModel);
-            SetPropScale(prop, PudgeScale);
+            var model = ModelForHero(heroName);
+            _heroModelOf[heroId] = model;
+            prop.SetModel(model);
+            SetPropScale(prop, model == PudgeModel ? PudgeScale : HeroScale);
+            Diag("hero model " + heroName + " -> " + model);
             _heroProp[heroId] = prop;
             _heroAnim.Remove(heroId);
             return prop;
@@ -517,13 +552,14 @@ public partial class DotaCSBridge : BasePlugin
         _heroAnim[heroId] = anim;
         prop.AcceptInput("SetAnimation", null, null, anim);
         prop.AcceptInput("SetDefaultAnimation", null, null, anim == "death" ? "death" : anim);
-        if (anim == "ult" && prop.AbsOrigin != null) StartFx(FxDismember, new Vector(prop.AbsOrigin.X, prop.AbsOrigin.Y, prop.AbsOrigin.Z + 60), 3.5f);
+        if (anim == "ult" && prop.AbsOrigin != null && (!_heroModelOf.TryGetValue(heroId, out var m) || m == PudgeModel)) StartFx(FxDismember, new Vector(prop.AbsOrigin.X, prop.AbsOrigin.Y, prop.AbsOrigin.Z + 60), 3.5f);
     }
 
     private void RemoveProp(string heroId)
     {
         if (_heroProp.TryGetValue(heroId, out var prop) && prop.IsValid) prop.Remove();
         _heroProp.Remove(heroId);
+        _heroModelOf.Remove(heroId);
         _heroAnim.Remove(heroId);
         _heroLastPos.Remove(heroId);
     }

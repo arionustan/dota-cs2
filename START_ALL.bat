@@ -91,6 +91,22 @@ echo Compiling creep models (first time takes a few minutes)...
 for /d %%U in ("%CONT%\models\dota_units\*") do (
   if not exist "%CSA%\models\dota_units\%%~nxU\%%~nxU.vmdl_c" "%RC%" -i "%%~U\%%~nxU.vmdl" >nul 2>&1
 )
+rem Dota heroes (tools/hero_build.py): every heroes*.zip is unpacked once, then each hero model compiles once.
+rem Compile output goes to models\dota_heroes\_compile_log.txt so problems can be read later.
+if not exist "%CONT%\models\dota_heroes" mkdir "%CONT%\models\dota_heroes"
+for %%Z in ("%PK%\heroes*.zip") do (
+  if not exist "%CONT%\models\dota_heroes\_%%~nZ.txt" (
+    echo Unpacking %%~nZ...
+    tar -xf "%%~Z" -C "%CONT%\models\dota_heroes"
+    echo 1> "%CONT%\models\dota_heroes\_%%~nZ.txt"
+  )
+)
+for /d %%U in ("%CONT%\models\dota_heroes\*") do (
+  if not exist "%CSA%\models\dota_heroes\%%~nxU\%%~nxU.vmdl_c" (
+    echo Compiling hero %%~nxU...
+    "%RC%" -i "%%~U\%%~nxU.vmdl" >> "%CONT%\models\dota_heroes\_compile_log.txt" 2>&1
+  )
+)
 echo [0/4] Copying the Dota map and the Pudge model into CS2 (client and server)...
 for %%D in ("%CSC%" "%CSS%") do (
   robocopy "%CSA%\models" "%%~D\models" *_c /S /XO /NFL /NDL /NJH /NJS /NP >nul
