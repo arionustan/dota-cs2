@@ -19,5 +19,24 @@ H={
  'antimage':('antimage',['antimage','antimage_arms','antimage_belt','antimage_chest','antimage_head','antimage_offhand_weapon','antimage_weapon']),
  'queenofpain':('queenofpain',['queenofpain','hair','queenofpain_legs','shoulders','wings','queenofpain_weapon']),
 }
+H.update({
+ 'mirana':('mirana',['mirana','bow','bracers','cape','head_item','quiver','shoulders','mount']),
+ 'riki':('rikimaru',['rikimaru','rikimaru__offhand_weapon','rikimaru_gloves','rikimaru_head','rikimaru_shoulder','rikimaru_tail','rikimaru_weapon']),
+ 'bloodseeker':('blood_seeker',['blood_seeker','belt','bracer','cape','helmet','neck','weapon','weapon_offhand']),
+ 'viper':('viper',['viper','viper_back']),
+ 'witch_doctor':('witchdoctor',['witchdoctor','witchdoctor_bag','witchdoctor_belt','witchdoctor_head','witchdoctor_skull','witchdoctor_staff']),
+ 'kunkka':('kunkka',['kunkka','kunkka_feet','kunkka_hair','kunkka_hands','kunkka_shoulders','kunkka_sword']),
+ 'skeleton_king':('wraith_king',['wraith_king','wraith_king_cape','wraith_king_chest','wraith_king_gauntlet','wraith_king_head','wraith_king_shoulder','wraith_king_weapon']),
+ 'dragon_knight':('dragon_knight',['dragon_knight','bracers','helmet','shield','shoulders','skirt','weapon']),
+ 'tidehunter':('tidehunter',['tidehunter','tidehunter_anchor','tidehunter_belt','tidehunter_bracer']),
+ 'ursa':('ursa',['ursa','bracers','fur','helmet','skirt']),
+ 'bristleback':('bristleback',['bristleback','bristleback_back','bristleback_bracer','bristleback_head','bristleback_necklace','bristleback_offhand_weapon','bristleback_weapon']),
+ 'ogre_magi':('ogre_magi',['ogre_magi','ogre_magi_belt','ogre_magi_bracers','ogre_magi_cape','ogre_magi_hats','ogre_magi_weapon']),
+ 'huskar':('huskar',['huskar','huskar_bracer','huskar_dagger','huskar_helmet','huskar_shoulder','huskar_spear']),
+ 'necrolyte':('necrolyte',['necrolyte','beard','hat','legs','shoulders','necrolyte_sickle']),
+ 'shadow_shaman':('shadowshaman',['shadowshaman','armarmor','belt','head','helmet','weapon','weapon_offhand']),
+ 'troll_warlord':('troll_warlord',['troll_warlord','troll_warlord_armor_model_lod0','troll_warlord_head','troll_warlord_shoulders','troll_warlord_weapons']),
+})
+
 def vmdls(h):
     d,parts=H[h]; return ['models/heroes/%s/%s.vmdl'%(d,p) for p in parts]

@@ -500,7 +500,9 @@ public partial class DotaCSBridge : BasePlugin
     // Dota heroes with their own model in CS2 (tools/hero_build.py); everyone else is shown as Pudge
     private static readonly string[] HeroModelNames =
         { "axe", "juggernaut", "sniper", "crystal_maiden", "lina", "phantom_assassin", "drow_ranger", "nevermore",
-          "earthshaker", "zuus", "lion", "invoker", "slark", "windrunner", "sven", "legion_commander", "faceless_void", "antimage", "queenofpain" };
+          "earthshaker", "zuus", "lion", "invoker", "slark", "windrunner", "sven", "legion_commander", "faceless_void", "antimage", "queenofpain",
+          "mirana", "riki", "bloodseeker", "viper", "witch_doctor", "kunkka", "skeleton_king", "dragon_knight", "tidehunter", "ursa",
+          "bristleback", "ogre_magi", "huskar", "necrolyte", "shadow_shaman", "troll_warlord" };
     private const float HeroScale = 0.75f;
     private const float HeroHitboxScale = 2.4f;   // other heroes are smaller than Pudge
     private readonly Dictionary<string, string> _heroModelOf = new();
