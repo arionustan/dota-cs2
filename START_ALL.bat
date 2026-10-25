@@ -91,6 +91,12 @@ echo Compiling creep models (first time takes a few minutes)...
 for /d %%U in ("%CONT%\models\dota_units\*") do (
   if not exist "%CSA%\models\dota_units\%%~nxU\%%~nxU.vmdl_c" "%RC%" -i "%%~U\%%~nxU.vmdl" >nul 2>&1
 )
+rem Map materials tinted with the colors the real Dota map gives them (cliffs, rocks, stairs...). Compiled once.
+if not exist "%CSA%\models\dota_map\_tint1.txt" (
+  echo Recoloring map rocks and cliffs...
+  for %%M in (bad_shop001 bones_tintable_002 campfire_rocks001 cliff_wall001 cliff_wall002 cliff_wall003 crystal001_refract crystal_02 dire_chain001_tint dire_lava_tint_00 dire_river_statue flowers_00 flowers_02 good_base_wall001 good_shop001_items grass_clump_tintable_02 ground_rock001 liquid_pour_00 log002 mushrooms_wild_00 neutral_creep_camp001 petals_pink001 radiant_barracks_pool001 radiant_statue002 radiant_tower_base002 radiant_wall001 river_rocks001 roots_radiant roots_radiant_leaves secretshop_dire001 secretshop_radiant001 statue001 stone_wall001 stone_wall002 stone_wall003 stone_wall004 temple_stairs001 temple_stairs_blocks001 temple_stairs_blocks002 tile_stone_000_50 torch001 tree_gnarly001 urn001 urn002 urn002b waterfall_bridge_statue002_tintable web_fall_00 wood_fence001_tintable wood_walls001) do "%RC%" -i "%CONT%\models\dota_map\%%M.vmat" >nul 2>&1
+  echo 1> "%CSA%\models\dota_map\_tint1.txt"
+)
 rem Dota heroes (tools/hero_build.py): every heroes*.zip is unpacked once, then each hero model compiles once.
 rem Compile output goes to models\dota_heroes\_compile_log.txt so problems can be read later.
 if not exist "%CONT%\models\dota_heroes" mkdir "%CONT%\models\dota_heroes"
