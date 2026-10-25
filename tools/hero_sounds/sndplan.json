@@ -1,0 +1,1098 @@
+{
+ "axe": {
+  "events": {
+   "attack": "Hero_Axe.Attack",
+   "abilities": {
+    "axe_berserkers_call": "Hero_Axe.Berserkers_Call",
+    "axe_battle_hunger": "Hero_Axe.Battle_Hunger",
+    "axe_counter_helix": "Hero_Axe.CounterHelix",
+    "axe_culling_blade": "Hero_Axe.Culling_Blade_Success"
+   }
+  },
+  "files": {
+   "Hero_Axe.Attack": [
+    "sounds/weapons/hero/axe/attack01.vsnd",
+    "sounds/weapons/hero/axe/attack02.vsnd",
+    "sounds/weapons/hero/axe/attack03.vsnd"
+   ],
+   "Hero_Axe.Berserkers_Call": [
+    "sounds/weapons/hero/axe/berserkers_call.vsnd"
+   ],
+   "Hero_Axe.Battle_Hunger": [
+    "sounds/weapons/hero/axe/battle_hunger.vsnd"
+   ],
+   "Hero_Axe.CounterHelix": [
+    "sounds/weapons/hero/axe/counterhelix.vsnd"
+   ],
+   "Hero_Axe.Culling_Blade_Success": [
+    "sounds/weapons/hero/axe/culling_blade_success.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_Axe.PreAttack": 0.599609,
+   "Hero_Axe.Attack": 1.0,
+   "Hero_Axe.Attack.Impact": 0.149902,
+   "Hero_Axe.Attack.Post": 0.299927,
+   "Hero_Axe.BerserkersCall.Start": 1.0,
+   "Hero_Axe.Berserkers_Call": 1.0,
+   "Hero_Axe.Battle_Hunger": 1.0,
+   "Hero_Axe.CounterHelix": 1.0,
+   "Hero_Axe.CounterHelix_Blood_Chaser": 1.0,
+   "Hero_Axe.Culling_Blade_Fail": 1.0,
+   "Hero_Axe.Culling_Blade_Success": 1.0,
+   "Hero_Axe.Footsteps": 0.449707,
+   "Hero_Axe.Armor": 0.3,
+   "Hero_Axe.BerserkersCall.Item.Shoutmask": 1.0,
+   "Hero_Axe.PreAttack.Jungle": 1.0,
+   "Hero_Axe.Attack.Jungle": 1.0,
+   "Hero_Axe.JungleWeapon.Dunk": 1.0,
+   "Hero_Axe.Attack.Automaton": 1.0,
+   "Hero_Axe.Attack.Automaton.Layer": 1.0,
+   "Hero_Axe.Culling_Blade_Success.Automaton": 1.0,
+   "Hero_Axe.Automaton.Cull.Layer": 1.0,
+   "Hero_Axe.IdleLoop.Automaton": 0.75,
+   "Hero_Axe.Automaton.Footsteps": 0.6,
+   "Hero_Axe.Automaton.Footsteps.Layer": 0.6,
+   "Hero_Axe.Automaton.Foley": 0.33
+  }
+ },
+ "juggernaut": {
+  "events": {
+   "attack": "Hero_Juggernaut.Attack",
+   "abilities": {
+    "juggernaut_blade_fury": "Hero_Juggernaut.BladeFuryStart",
+    "juggernaut_healing_ward": "Hero_Juggernaut.HealingWard.Cast",
+    "juggernaut_blade_dance": "Hero_Juggernaut.BladeDance",
+    "juggernaut_swift_slash": "Hero_Juggernaut.SwiftSlash",
+    "juggernaut_omni_slash": "Hero_Juggernaut.OmniSlash"
+   }
+  },
+  "files": {
+   "Hero_Juggernaut.Attack": [
+    "sounds/weapons/hero/juggernaut/attack01.vsnd",
+    "sounds/weapons/hero/juggernaut/attack02.vsnd",
+    "sounds/weapons/hero/juggernaut/attack03.vsnd"
+   ],
+   "Hero_Juggernaut.BladeFuryStart": [
+    "sounds/weapons/hero/juggernaut/bladefury_start_loop.vsnd"
+   ],
+   "Hero_Juggernaut.HealingWard.Cast": [
+    "sounds/weapons/hero/juggernaut/healing_ward_cast.vsnd"
+   ],
+   "Hero_Juggernaut.BladeDance": [
+    "sounds/weapons/hero/juggernaut/sword_swing_special.vsnd"
+   ],
+   "Hero_Juggernaut.SwiftSlash": [
+    "sounds/weapons/hero/shared/small_blade/ring01.vsnd",
+    "sounds/weapons/hero/shared/small_blade/ring02.vsnd",
+    "sounds/weapons/hero/shared/small_blade/ring03.vsnd"
+   ],
+   "Hero_Juggernaut.OmniSlash": [
+    "sounds/weapons/hero/juggernaut/omnislash_attack1.vsnd",
+    "sounds/weapons/hero/juggernaut/omnislash_attack2.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_Juggernaut.PreAttack": 0.699707,
+   "Hero_Juggernaut.Attack": 1.0,
+   "Hero_Juggernaut.Attack.Rip": 0.75,
+   "Hero_Juggernaut.Attack.Ring": 0.449951,
+   "Hero_Juggernaut.BladeDance": 0.849609,
+   "Hero_Juggernaut.BladeFuryStart": 1.0,
+   "Hero_Juggernaut.BladeFuryStop": 1.0,
+   "Hero_Juggernaut.BladeFury.Impact": 1.0,
+   "Hero_Juggernaut.HealingWard.Cast": 1.0,
+   "Hero_Juggernaut.HealingWard.Loop": 0.5,
+   "Hero_Juggernaut.HealingWard.Stop": 1.0,
+   "Hero_Juggernaut.OmniSlash": 1.0,
+   "Hero_Juggernaut.SwiftSlash": 1.0,
+   "Hero_Juggernaut.OmniSlash.Damage": 0.849609,
+   "Hero_Juggernaut.Footsteps": 0.299927,
+   "Hero_Juggernaut.Impact": 0.349854,
+   "Hero_Juggernaut.idle": 0.5,
+   "Hero_Juggernaut.Taunt.Spin": 1.0,
+   "Hero_Juggernaut.Taunt.Impact": 1.0,
+   "Hero_Juggernaut.FortunesTout.Cast": 1.0,
+   "Hero_Juggernaut.FortunesTout.Cast.Layer": 0.8,
+   "Hero_Juggernaut.FortunesTout.Loop": 0.5,
+   "Hero_Juggernaut.FortunesTout.Stop": 1.0,
+   "Hero_Juggernaut.FortunesTout.Stop.Layer": 1.0,
+   "Hero_Juggernaut.ArcanaTrigger": 1.0,
+   "Hero_Juggernaut.ArcanaTrigger.Loadout_1": 1.0,
+   "Hero_Juggernaut.ArcanaTrigger.Loadout": 1.0,
+   "Hero_Juggernaut.BladeDance.Arcana": 0.849609,
+   "Hero_Juggernaut.BladeDance.Layer": 0.8,
+   "Hero_Juggernaut.ArcanaHaste.Anim": 1.0
+  }
+ },
+ "sniper": {
+  "events": {
+   "attack": "Hero_Sniper.attack",
+   "abilities": {
+    "sniper_shrapnel": "Hero_Sniper.ShrapnelShoot",
+    "sniper_take_aim": "Hero_Sniper.TakeAim.Cast",
+    "sniper_concussive_grenade": "Hero_Sniper.ConcussiveGrenade",
+    "sniper_assassinate": "Ability.Assassinate"
+   }
+  },
+  "files": {
+   "Hero_Sniper.attack": [
+    "sounds/weapons/hero/sniper/sniper_attack.vsnd"
+   ],
+   "Hero_Sniper.ShrapnelShoot": [
+    "sounds/weapons/hero/sniper/shrapnel_fire.vsnd"
+   ],
+   "Hero_Sniper.TakeAim.Cast": [
+    "sounds/weapons/hero/sniper/take_aim.vsnd"
+   ],
+   "Hero_Sniper.ConcussiveGrenade": [
+    "sounds/weapons/hero/sniper/concussive_grenade.vsnd"
+   ],
+   "Ability.Assassinate": [
+    "sounds/weapons/hero/sniper/sniper_assassinate.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_Sniper.attack": 1.0,
+   "Hero_Sniper.ProjectileImpact": 0.5,
+   "Ability.Assassinate": 1.0,
+   "Ability.AssassinateLoad": 1.0,
+   "Hero_Sniper.AssassinateProjectile": 1.0,
+   "Hero_Sniper.AssassinateDamage": 1.0,
+   "Hero_Sniper.ShrapnelShoot": 1.0,
+   "Hero_Sniper.ShrapnelShatter": 1.0,
+   "Hero_Sniper.Footsteps": 0.199951,
+   "Hero_Sniper.Tutorial_Intro_a": 0.5,
+   "Hero_Sniper.Tutorial_Intro_b": 0.5,
+   "Hero_Sniper.Tutorial_Intro_c": 0.399902,
+   "Hero_Sniper.MKG_attack": 1.0,
+   "Hero_Sniper.MKG_impact": 0.799805,
+   "Ability.MKG_AssassinateLoad": 1.0,
+   "Hero_Sniper.MKG_deathshot": 1.0,
+   "Hero_Sniper.MKG_ShrapnelShoot": 1.0,
+   "Hero_Sniper.MKG_ShrapnelShatter": 1.0,
+   "Hero_Sniper.DuckTarget": 1.0,
+   "Hero_Sniper.Attack.DT20": 1.0,
+   "Hero_Sniper.Attack.Layer": 1.0,
+   "Hero_Sniper.ConcussiveGrenade.Cast": 1.0,
+   "Hero_Sniper.ConcussiveGrenade": 1.0,
+   "Hero_Sniper.ConcussiveGrenade.Target": 1.0,
+   "Hero_Sniper.TakeAim.Cast": 1.0
+  }
+ },
+ "crystal_maiden": {
+  "events": {
+   "attack": "hero_Crystal.attack",
+   "death": "Hero_Crystal.Death",
+   "abilities": {
+    "crystal_maiden_crystal_nova": "Hero_Crystal.CrystalNova",
+    "crystal_maiden_frostbite": "hero_Crystal.frostbite",
+    "crystal_maiden_crystal_clone": "Hero_Crystal.CrystalClone.Cast",
+    "crystal_maiden_freezing_field": "hero_Crystal.freezingField.wind"
+   }
+  },
+  "files": {
+   "hero_Crystal.attack": [
+    "sounds/weapons/hero/crystal_maiden/attack01.vsnd",
+    "sounds/weapons/hero/crystal_maiden/attack02.vsnd"
+   ],
+   "Hero_Crystal.Death": [
+    "sounds/physics/deaths/specials/icemaiden_death.vsnd"
+   ],
+   "Hero_Crystal.CrystalNova": [
+    "sounds/weapons/hero/crystal_maiden/crystal_nova.vsnd"
+   ],
+   "hero_Crystal.frostbite": [
+    "sounds/weapons/hero/crystal_maiden/frostbite.vsnd"
+   ],
+   "Hero_Crystal.CrystalClone.Cast": [
+    "sounds/weapons/hero/crystal_maiden/crystal_clone_cast.vsnd"
+   ],
+   "hero_Crystal.freezingField.wind": [
+    "sounds/weapons/hero/crystal_maiden/freezing_field.vsnd"
+   ]
+  },
+  "vol": {
+   "hero_Crystal.preAttack": 0.5,
+   "hero_Crystal.attack": 1.0,
+   "hero_Crystal.projectileImpact": 1.0,
+   "Hero_Crystal.CrystalNova": 1.0,
+   "hero_Crystal.CrystalNovaCast": 0.5,
+   "hero_Crystal.frostbite": 1.0,
+   "hero_Crystal.freezingField.wind": 0.799805,
+   "hero_Crystal.freezingField.explosion": 0.89978,
+   "Hero_Crystal.Footsteps": 0.39978,
+   "Hero_Crystal.Death": 0.699707,
+   "Hero_Crystal.CrystalNova.Yulsaria": 1.0,
+   "Hero_Crystal.FreezingField.Arcana": 0.799805,
+   "Hero_Crystal.ChoirOfIcewrack": 0.799805,
+   "Hero_CrystalMaiden.Movement": 0.4,
+   "Hero_Crystal.CrystalClone.Cast": 1.0,
+   "Hero_Crystal.CrystalClone.Destroy": 1.0,
+   "Icewrack_Pup.Footsteps": 0.549988,
+   "Icewrack_Pup.Pant": 0.6,
+   "Icewrack_Pup.Breath": 0.5,
+   "Icewrack_Pup.Happy": 0.799683,
+   "Icewrack_Pup.idle_alt_shake": 1.0,
+   "Icewrack_Pup.idle_alt_bark": 1.0,
+   "Icewrack_Pup.Ult.Howl": 1.0,
+   "Icewrack_Pup.Flee": 1.0,
+   "Icewrack_Pup.Alert": 1.0,
+   "Icewrack_Pup.Yawn": 1.0,
+   "Icewrack_Pup.Scritch": 0.799683,
+   "Hero_CrystalMaiden.SnowmanTaunt": 1.0,
+   "Hero_CrystalMaiden.Snowman": 1.0,
+   "Hero_Crystal_Persona.Ult_Howl": 1.0,
+   "Hero_Crystal_Persona.Footsteps": 0.3
+  }
+ },
+ "lina": {
+  "events": {
+   "attack": "Hero_Lina.attack",
+   "death": "Hero_Lina.Death",
+   "abilities": {
+    "lina_dragon_slave": "Hero_Lina.DragonSlave",
+    "lina_light_strike_array": "Ability.LightStrikeArray",
+    "lina_flame_cloak": "Hero_Lina.FlameCloak.Cast",
+    "lina_laguna_blade": "Ability.LagunaBlade"
+   }
+  },
+  "files": {
+   "Hero_Lina.attack": [
+    "sounds/weapons/hero/lina/attack.vsnd"
+   ],
+   "Hero_Lina.Death": [
+    "sounds/physics/deaths/specials/lina_death.vsnd"
+   ],
+   "Hero_Lina.DragonSlave": [
+    "sounds/weapons/hero/lina/dragonslave01.vsnd",
+    "sounds/weapons/hero/lina/dragonslave02.vsnd"
+   ],
+   "Ability.LightStrikeArray": [
+    "sounds/weapons/hero/lina/lightstrikearray.vsnd"
+   ],
+   "Hero_Lina.FlameCloak.Cast": [
+    "sounds/weapons/hero/lina/flame_cloak.vsnd"
+   ],
+   "Ability.LagunaBlade": [
+    "sounds/weapons/hero/lina/lagunablade.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_Lina.PreAttack": 1.0,
+   "Hero_Lina.attack": 1.0,
+   "Hero_Lina.ProjectileImpact": 1.0,
+   "Hero_Lina.DragonSlave": 1.0,
+   "Hero_Lina.DragonSlave.Cast": 0.0,
+   "Hero_Lina.DragonSlave.FireHair": 1.0,
+   "Ability.PreLightStrikeArray": 1.0,
+   "Ability.LightStrikeArray": 1.0,
+   "Ability.LagunaBlade": 1.0,
+   "Ability.LagunaBladeImpact": 1.0,
+   "Hero_Lina.IdleLoop": 0.299805,
+   "Hero_Lina.Death": 0.599609,
+   "Hero_Lina.LagunaBlade.Immortal": 1.0,
+   "Hero_Lina.LagunaBladeImpact.Immortal": 1.0,
+   "Ability.PreLightStrikeArray.ti7": 1.0,
+   "Ability.PreLightStrikeArray.ti7_layer": 0.8,
+   "Hero_Lina.FlameCloak.Cast": 1.0,
+   "Hero_Lina.Overheat.Explosion": 1.0
+  }
+ },
+ "phantom_assassin": {
+  "events": {
+   "attack": "Hero_PhantomAssassin.Attack",
+   "abilities": {
+    "phantom_assassin_stifling_dagger": "Hero_PhantomAssassin.Dagger.Cast",
+    "phantom_assassin_phantom_strike": "Hero_PhantomAssassin.Strike.Start",
+    "phantom_assassin_blur": "Hero_PhantomAssassin.Blur",
+    "phantom_assassin_fan_of_knives": "Hero_PhantomAssassin.FanOfKnives.Cast",
+    "phantom_assassin_coup_de_grace": "Hero_PhantomAssassin.CoupDeGrace"
+   }
+  },
+  "files": {
+   "Hero_PhantomAssassin.Attack": [
+    "sounds/weapons/hero/shared/small_blade/attack_long01.vsnd",
+    "sounds/weapons/hero/shared/small_blade/attack_long02.vsnd",
+    "sounds/weapons/hero/shared/small_blade/attack_long03.vsnd"
+   ],
+   "Hero_PhantomAssassin.Dagger.Cast": [
+    "sounds/weapons/hero/phantom_assassin/stifling_dagger_cast.vsnd"
+   ],
+   "Hero_PhantomAssassin.Strike.Start": [
+    "sounds/weapons/hero/antimage/blink_out.vsnd"
+   ],
+   "Hero_PhantomAssassin.Blur": [
+    "sounds/weapons/hero/phantom_assassin/blur_cast.vsnd"
+   ],
+   "Hero_PhantomAssassin.FanOfKnives.Cast": [
+    "sounds/weapons/hero/phantom_assassin/fan_of_knives.vsnd"
+   ],
+   "Hero_PhantomAssassin.CoupDeGrace": [
+    "sounds/weapons/hero/phantom_assassin/coup_de_grace.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_PhantomAssassin.PreAttack": 0.649902,
+   "Hero_PhantomAssassin.Attack": 1.0,
+   "Hero_PhantomAssassin.Attack.Rip": 0.649902,
+   "Hero_PhantomAssassin.Dagger.Cast": 1.0,
+   "Hero_PhantomAssassin.Dagger.Target": 1.0,
+   "Hero_PhantomAssassin.Strike.Start": 0.5,
+   "Hero_PhantomAssassin.Strike.End": 0.5,
+   "Hero_PhantomAssassin.Blur": 1.0,
+   "Hero_PhantomAssassin.Blur.Break": 1.0,
+   "Hero_PhantomAssassin.CoupDeGrace.Mech": 0.5,
+   "Hero_PhantomAssassin.CoupDeGrace": 0.799805,
+   "Hero_PhantomAssassin.Spatter": 0.699707,
+   "Hero_PhantomAssassin.Footsteps": 0.249939,
+   "Hero_PhantomAssassin.CoupDeGrace.Arcana": 0.799805,
+   "Hero_PhantomAssassin.Arcana_Layer": 0.5,
+   "Hero_PhantomAssassin.TI8_taunt": 1.0,
+   "Hero_PhantomAssassin.FanOfKnives.Cast": 1.0,
+   "Hero_PhantomAssassin.PreAttack.Persona": 1.0,
+   "Hero_PhantomAssassin.Attack.Persona": 0.75
+  }
+ },
+ "drow_ranger": {
+  "events": {
+   "attack": "Hero_DrowRanger.Attack",
+   "abilities": {
+    "drow_ranger_frost_arrows": "Hero_DrowRanger.FrostArrows",
+    "drow_ranger_wave_of_silence": "Hero_DrowRanger.Silence",
+    "drow_ranger_multishot": "Hero_DrowRanger.Multishot.Channel",
+    "drow_ranger_glacier": "Hero_Drow.Glacier",
+    "drow_ranger_marksmanship": "Hero_DrowRanger.Marksmanship.Target"
+   }
+  },
+  "files": {
+   "Hero_DrowRanger.Attack": [
+    "sounds/weapons/hero/drow_ranger/arrow_1.vsnd",
+    "sounds/weapons/hero/drow_ranger/arrow_2.vsnd",
+    "sounds/weapons/hero/drow_ranger/arrow_3.vsnd"
+   ],
+   "Hero_DrowRanger.FrostArrows": [
+    "sounds/weapons/hero/drow_ranger/frost_arrow1.vsnd",
+    "sounds/weapons/hero/drow_ranger/frost_arrow2.vsnd",
+    "sounds/weapons/hero/drow_ranger/frost_arrow3.vsnd"
+   ],
+   "Hero_DrowRanger.Silence": [
+    "sounds/weapons/hero/drow_ranger/silence.vsnd"
+   ],
+   "Hero_DrowRanger.Multishot.Channel": [
+    "sounds/weapons/hero/drow_ranger/multishot_channel.vsnd"
+   ],
+   "Hero_Drow.Glacier": [
+    "sounds/weapons/hero/drow_ranger/glacier.vsnd"
+   ],
+   "Hero_DrowRanger.Marksmanship.Target": [
+    "sounds/weapons/hero/drow_ranger/marksmanship_target.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_DrowRanger.Attack": 0.5,
+   "Hero_DrowRanger.ProjectileImpact": 1.0,
+   "Hero_DrowRanger.FrostArrows": 1.0,
+   "Hero_DrowRanger.Silence": 1.0,
+   "Hero_DrowRanger.Multishot.Channel": 1.0,
+   "Hero_DrowRanger.Multishot.Attack": 1.0,
+   "Hero_DrowRanger.Multishot.FrostArrows": 1.0,
+   "Hero_DrowRanger.Marksmanship.Target": 1.0,
+   "Hero_DrowRanger.Footsteps": 0.249939,
+   "Hero_DrowRanger.ArcanaProgressHudDeath": 1.0,
+   "Hero_DrowRanger.ArcanaProgressHudKill": 1.0,
+   "Hero_DrowRanger.ArcanaProgressHudSlash": 0.5,
+   "Hero_DrowRanger.Attack.Arcana": 0.5,
+   "Hero_DrowRanger.ProjectileImpact.Crit.Arcana": 1.0,
+   "Hero_DrowRanger.Attack.ArcLayer": 1.0,
+   "Hero_DrowRanger.Reload": 1.0,
+   "Hero_DrowRanger.Reload.Loadout": 1.0,
+   "Hero_Drow.Glacier": 1.0,
+   "Hero_Drow.Glacier.End": 1.0,
+   "Hero_Drow.Taunt2024.1": 1.0,
+   "Hero_Drow.Taunt2024.2": 1.0
+  }
+ },
+ "nevermore": {
+  "events": {
+   "attack": "Hero_Nevermore.Attack",
+   "death": "Hero_Nevermore.Death",
+   "abilities": {
+    "nevermore_frenzy": "Hero_Nevermore.Frenzy",
+    "nevermore_requiem": "Hero_Nevermore.RequiemOfSouls"
+   }
+  },
+  "files": {
+   "Hero_Nevermore.Attack": [
+    "sounds/weapons/hero/nevermore/attack01.vsnd",
+    "sounds/weapons/hero/nevermore/attack02.vsnd"
+   ],
+   "Hero_Nevermore.Death": [
+    "sounds/physics/deaths/specials/shadowfiend_death.vsnd"
+   ],
+   "Hero_Nevermore.Frenzy": [
+    "sounds/weapons/hero/nevermore/frenzy.vsnd"
+   ],
+   "Hero_Nevermore.RequiemOfSouls": [
+    "sounds/weapons/hero/nevermore/requiem_of_souls.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_Nevermore.Attack": 1.0,
+   "Hero_Nevermore.ProjectileImpact": 1.0,
+   "Hero_Nevermore.Shadowraze": 0.799805,
+   "Hero_Nevermore.Frenzy": 1.0,
+   "Hero_Nevermore.RequiemOfSoulsCast": 1.0,
+   "Hero_Nevermore.RequiemOfSouls": 1.0,
+   "Hero_Nevermore.RequiemOfSouls.Damage": 1.0,
+   "Hero_Nevermore.IdleLoop": 0.399902,
+   "Hero_Nevermore.Death": 1.0,
+   "Hero_Nevermore.Shadowraze.Arcana": 0.649597,
+   "Hero_Nevermore.Raze_Flames": 1.0,
+   "Hero_Nevermore.ROS.Arcana.Cast": 1.0,
+   "Hero_Nevermore.ROS.Arcana": 1.0,
+   "Hero_Nevermore.ROS_Cast_Flames": 1.0,
+   "Hero_Nevermore.ROS_Flames": 1.0,
+   "Hero_Nevermore.Taunt.Swagger": 1.0
+  }
+ },
+ "earthshaker": {
+  "events": {
+   "attack": "Hero_EarthShaker.Attack",
+   "death": "Hero_EarthShaker.Death",
+   "abilities": {
+    "earthshaker_fissure": "Hero_EarthShaker.Fissure",
+    "earthshaker_enchant_totem": "Hero_EarthShaker.Totem",
+    "earthshaker_echo_slam": "Hero_EarthShaker.EchoSlam"
+   }
+  },
+  "files": {
+   "Hero_EarthShaker.Attack": [
+    "sounds/weapons/hero/earthshaker/fist_swing_impact1.vsnd",
+    "sounds/weapons/hero/earthshaker/fist_swing_impact2.vsnd",
+    "sounds/weapons/hero/earthshaker/fist_swing_impact3.vsnd"
+   ],
+   "Hero_EarthShaker.Death": [
+    "sounds/physics/deaths/specials/earthshaker_death_totem.vsnd"
+   ],
+   "Hero_EarthShaker.Fissure": [
+    "sounds/weapons/hero/earthshaker/fissure.vsnd"
+   ],
+   "Hero_EarthShaker.Totem": [
+    "sounds/weapons/hero/earthshaker/enchant.vsnd"
+   ],
+   "Hero_EarthShaker.EchoSlam": [
+    "sounds/weapons/hero/earthshaker/echo_slam.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_EarthShaker.PreAttack": 1.0,
+   "Hero_EarthShaker.Attack": 1.0,
+   "Hero_Earthshaker.Attack.Impact": 0.5,
+   "Hero_EarthShaker.Whoosh": 1.0,
+   "Hero_EarthShaker.Fissure.Cast": 0.5,
+   "Hero_EarthShaker.Fissure": 0.7,
+   "Hero_EarthShaker.FissureDestroy": 0.75,
+   "Hero_EarthShaker.Totem": 1.0,
+   "Hero_EarthShaker.Totem.Attack": 1.0,
+   "Hero_EarthShaker.EchoSlam.Single": 1.0,
+   "Hero_EarthShaker.EchoSlam": 1.0,
+   "Hero_EarthShaker.EchoSlamEcho": 0.75,
+   "Hero_EarthShaker.EchoSlamSmall": 1.0,
+   "Hero_EarthShaker.Footsteps": 0.249878,
+   "Hero_EarthShaker.Death": 0.599609,
+   "Hero_EarthShaker.IdleSlam": 0.799805,
+   "Hero_EarthShaker.Gravelmaw.Cast": 0.8,
+   "Hero_EarthShaker.Gravelmaw": 0.8,
+   "Hero_EarthShaker.Totem.Immortal": 1.0,
+   "Hero_EarthShaker.Totem.TI6.Layer": 1.0,
+   "Hero_EarthShaker.Totem.Attack.Immortal": 1.0,
+   "Hero_EarthShaker.Totem.Attack.Immortal.Layer": 1.0,
+   "Hero_EarthShaker.EchoSlamSmall.Arcana": 1.0,
+   "Hero_EarthShaker.EchoSlam.Single.Arcana": 1.0,
+   "Hero_EarthShaker.EchoSlam.Arcana": 1.0,
+   "Hero_Earthshaker.EchoSlam.ArcanaLayer": 1.0,
+   "Hero_EarthShaker.EchoSlamEcho.Arcana": 1.0,
+   "Hero_EarthShaker.Arcana.EchoLayer": 1.0,
+   "Hero_Earthshaker.Arcana.GlobalLayer1": 1.0,
+   "Hero_Earthshaker.Arcana.GlobalLayer2": 1.0,
+   "Hero_Earthsaker.EchoProjectile.Target.Arcana": 0.5,
+   "Hero_Earthshaker.Arcana.ComboCounter": 1.0,
+   "Hero_Earthshaker.Arcana.ComboDamageSummary": 1.0,
+   "Hero_Earthshaker.Arcana.ComboDamageTick": 0.25,
+   "Hero_EarthShaker.Arcana.run_alt1": 1.0,
+   "Hero_EarthShaker.Arcana.run_alt2": 1.0,
+   "Hero_Earthshaker.BlinkDagger.Arcana": 0.8,
+   "Hero_EarthShaker.BlinkLayer": 1.0,
+   "Hero_EarthShaker.Taunt.TI10": 1.0
+  }
+ },
+ "zuus": {
+  "events": {
+   "attack": "Hero_Zuus.Attack",
+   "abilities": {
+    "zuus_arc_lightning": "Hero_Zuus.ArcLightning.Cast",
+    "zuus_lightning_bolt": "Hero_Zuus.LightningBolt",
+    "zuus_heavenly_jump": "Hero_Zuus.Taunt.Jump",
+    "zuus_cloud": "Hero_Zuus.Cloud.Cast",
+    "zuus_lightning_hands": "Hero_Zuus.LightningHands.Cast",
+    "zuus_thundergods_wrath": "Hero_Zuus.GodsWrath"
+   }
+  },
+  "files": {
+   "Hero_Zuus.Attack": [
+    "sounds/weapons/hero/zuus/general_attack4.vsnd",
+    "sounds/weapons/hero/zuus/general_attack5.vsnd",
+    "sounds/weapons/hero/zuus/general_attack6.vsnd"
+   ],
+   "Hero_Zuus.ArcLightning.Cast": [
+    "sounds/weapons/hero/zuus/arc_lightning.vsnd"
+   ],
+   "Hero_Zuus.LightningBolt": [
+    "sounds/weapons/hero/zuus/lightning_bolt.vsnd"
+   ],
+   "Hero_Zuus.Taunt.Jump": [
+    "sounds/weapons/hero/zuus/taunt_jump.vsnd"
+   ],
+   "Hero_Zuus.Cloud.Cast": [
+    "sounds/weapons/hero/zuus/cloud_cast.vsnd"
+   ],
+   "Hero_Zuus.LightningHands.Cast": [
+    "sounds/weapons/hero/zuus/arc_lightning.vsnd"
+   ],
+   "Hero_Zuus.GodsWrath": [
+    "sounds/weapons/hero/zuus/gods_wrath_cast.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_Zuus.Attack": 1.0,
+   "Hero_Zuus.ProjectileImpact": 1.0,
+   "Hero_Zuus.ArcLightning.Cast": 1.0,
+   "Hero_Zuus.ArcLightning.Target": 0.5,
+   "Hero_Zuus.LightningBolt.Cast": 1.0,
+   "Hero_Zuus.LightningBolt": 1.0,
+   "Hero_Zuus.StaticField": 1.0,
+   "Hero_Zuus.GodsWrath": 1.0,
+   "Hero_Zuus.GodsWrath.PreCast": 1.0,
+   "Hero_Zuus.GodsWrath.Target": 1.0,
+   "Hero_Zuus.Footsteps": 0.39978,
+   "Hero_Zuus.Taunt.Jump": 1.0,
+   "Hero_Zuus.LightningBolt.Cast.Righteous": 1.0,
+   "Hero_Zuus.LightningBolt.Righteous": 1.0,
+   "Hero_Zuus.Righteous.Layer": 1.0,
+   "Hero_Zeus.BlinkDagger.Arcana": 1.0,
+   "Hero_Zuus.GodsWrath.PreCast.Arcana": 1.0,
+   "Hero_Zuus.Cloud.Cast": 1.0,
+   "Hero_Zuus.LightningBolt.Cloud": 1.0,
+   "Hero_Zuus.LightningHands.Cast": 1.0,
+   "Hero_Zuus.LightningHands.Target": 1.0
+  }
+ },
+ "lion": {
+  "events": {
+   "attack": "Hero_Lion.Attack",
+   "abilities": {
+    "lion_impale": "Hero_Lion.Impale",
+    "lion_voodoo": "Hero_Lion.Voodoo",
+    "lion_mana_drain": "Hero_Lion.ManaDrain",
+    "lion_finger_of_death": "Hero_Lion.FingerOfDeath"
+   }
+  },
+  "files": {
+   "Hero_Lion.Attack": [
+    "sounds/weapons/hero/lion/attack01.vsnd",
+    "sounds/weapons/hero/lion/attack02.vsnd",
+    "sounds/weapons/hero/lion/attack03.vsnd"
+   ],
+   "Hero_Lion.Impale": [
+    "sounds/weapons/hero/lion/lion_impale.vsnd"
+   ],
+   "Hero_Lion.Voodoo": [
+    "sounds/weapons/hero/lion/lion_voodoo.vsnd"
+   ],
+   "Hero_Lion.ManaDrain": [
+    "sounds/weapons/hero/lion/lion_manadrain.vsnd"
+   ],
+   "Hero_Lion.FingerOfDeath": [
+    "sounds/weapons/hero/lion/finger_of_death.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_Lion.Attack": 1.0,
+   "Hero_Lion.ProjectileImpact": 1.0,
+   "Hero_Lion.Punch.PreAttack": 0.499878,
+   "Hero_Lion.Punch.Attack": 0.8,
+   "Hero_Lion.Punch.Attack.Impact": 0.599976,
+   "Hero_Lion.Impale": 1.0,
+   "Hero_Lion.ImpaleHitTarget": 1.0,
+   "Hero_Lion.ImpaleTargetLand": 0.6,
+   "Hero_Lion.Voodoo": 0.699707,
+   "Hero_Lion.Hex.Target": 1.0,
+   "Hero_Lion.ManaDrain": 0.5,
+   "Hero_Lion.FingerOfDeath": 1.0,
+   "Hero_Lion.FingerOfDeathImpact": 0.7,
+   "Hero_Lion.Footsteps": 0.449707,
+   "Hero_Lion.Hex.Fishstick": 1.0,
+   "Hero_Lion.Fishstick.Target": 1.0,
+   "Hero_Lion.TauntToHell": 1.0,
+   "Hero_Lion.FingerOfDeath.TI8": 0.8,
+   "Hero_Lion.FingerOfDeathImpact.TI8": 0.8,
+   "Hero_Lion.FoD.Cast.TI8_layer": 1.0,
+   "Hero_Lion.FoD.Target.TI8_layer": 1.0,
+   "Hero_Lion.KillCounter": 1.0,
+   "Hero_Lion.Impale.Projectile.TI9": 1.0,
+   "Hero_Lion.FingerOfDeath.Precast.2025": 1.0,
+   "Hero_Lion.FingerOfDeath.2025": 0.8,
+   "Hero_Lion.FingerOfDeath.2025.Layer": 1.0
+  }
+ },
+ "invoker": {
+  "events": {
+   "attack": "Hero_Invoker.Attack",
+   "abilities": {
+    "invoker_invoke": "Hero_Invoker.Invoke",
+    "invoker_cold_snap": "Hero_Invoker.ColdSnap",
+    "invoker_ghost_walk": "Hero_Invoker.GhostWalk"
+   }
+  },
+  "files": {
+   "Hero_Invoker.Attack": [
+    "sounds/weapons/hero/witch_doctor/attack.vsnd"
+   ],
+   "Hero_Invoker.Invoke": [
+    "sounds/weapons/hero/invoker/invoke.vsnd"
+   ],
+   "Hero_Invoker.ColdSnap": [
+    "sounds/weapons/hero/invoker/cold_snap.vsnd"
+   ],
+   "Hero_Invoker.GhostWalk": [
+    "sounds/weapons/hero/invoker/ghost_walk.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_Invoker.PreAttack": 1.0,
+   "Hero_Invoker.Attack": 1.0,
+   "Hero_Invoker.ProjectileImpact": 0.5,
+   "Hero_Invoker.Invoke": 1.0,
+   "Hero_Invoker.ColdSnap.Cast": 0.5,
+   "Hero_Invoker.ColdSnap": 1.0,
+   "Hero_Invoker.ColdSnap.Freeze": 0.5,
+   "Hero_Invoker.GhostWalk": 1.0,
+   "Hero_Invoker.Tornado.Cast": 1.0,
+   "Hero_Invoker.Tornado": 1.0,
+   "Hero_Invoker.Tornado.Target": 0.799805,
+   "Hero_Invoker.Tornado.LandDamage": 0.299988,
+   "Hero_Invoker.EMP.Cast": 1.0,
+   "Hero_Invoker.EMP.Charge": 1.0,
+   "Hero_Invoker.EMP.Discharge": 1.0,
+   "Hero_Invoker.Alacrity": 1.0,
+   "Hero_Invoker.ChaosMeteor.Cast": 1.0,
+   "Hero_Invoker.ChaosMeteor.Loop": 1.0,
+   "Hero_Invoker.ChaosMeteor.Impact": 1.0,
+   "Hero_Invoker.ChaosMeteor.Destroy": 0.5,
+   "Hero_Invoker.ChaosMeteor.Damage": 0.5,
+   "Hero_Invoker.SunStrike.Charge": 1.0,
+   "Hero_Invoker.SunStrike.Ignite": 1.0,
+   "Hero_Invoker.Cataclysm.Charge": 1.0,
+   "Hero_Invoker.Cataclysm.Ignite": 1.0,
+   "Hero_Invoker.ForgeSpirit": 1.0,
+   "Hero_Invoker.IceWall.Cast": 0.599609,
+   "Hero_Invoker.IceWall.Slow": 0.39978,
+   "Hero_Invoker.Glacier.Cast": 1.0,
+   "Hero_Invoker.Glacier.Spawn": 0.599609,
+   "Hero_Invoker.Glacier.Root": 1.0,
+   "Hero_Invoker.DeafeningBlast": 1.0,
+   "Hero_Invoker.IdleLoop": 0.099976,
+   "Hero_Invoker.Footsteps": 0.399902,
+   "Hero_Invoker.SunStrike.Charge.Apex": 1.0,
+   "Hero_Invoker.SunStrike.Ignite.Apex": 1.0,
+   "Hero_Invoker.DeafeningBlast.Immortal": 1.0,
+   "Hero_Invoker.Tornado.Cast.Immortal": 1.0,
+   "Hero_Invoker.Kid.Footsteps": 0.3,
+   "Hero_Invoker.Kid.Taunt2025": 1.0
+  }
+ },
+ "slark": {
+  "events": {
+   "attack": "Hero_Slark.Attack",
+   "abilities": {
+    "slark_dark_pact": "Hero_Slark.DarkPact.Cast",
+    "slark_pounce": "Hero_Slark.Pounce.Cast",
+    "slark_saltwater_shiv": "Hero_Slark.SaltwaterShiv.Target",
+    "slark_depth_shroud": "Hero_Slark.DepthShroud",
+    "slark_shadow_dance": "Hero_Slark.ShadowDance"
+   }
+  },
+  "files": {
+   "Hero_Slark.Attack": [
+    "sounds/weapons/hero/bloodseeker/attack01.vsnd",
+    "sounds/weapons/hero/bloodseeker/attack02.vsnd",
+    "sounds/weapons/hero/bloodseeker/attack03.vsnd"
+   ],
+   "Hero_Slark.DarkPact.Cast": [
+    "sounds/weapons/hero/slark/dark_pact_cast.vsnd"
+   ],
+   "Hero_Slark.Pounce.Cast": [
+    "sounds/weapons/hero/slark/pounce_cast.vsnd"
+   ],
+   "Hero_Slark.SaltwaterShiv.Target": [
+    "sounds/weapons/hero/slark/shiv_target.vsnd"
+   ],
+   "Hero_Slark.DepthShroud": [
+    "sounds/weapons/hero/slark/fish_bait.vsnd"
+   ],
+   "Hero_Slark.ShadowDance": [
+    "sounds/weapons/hero/slark/shadow_dance.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_Slark.PreAttack": 1.0,
+   "Hero_Slark.Attack": 1.0,
+   "Hero_Slark.DarkPact.PreCast": 0.5,
+   "Hero_Slark.DarkPact.Cast": 1.0,
+   "Hero_Slark.Pounce.Cast": 0.5,
+   "Hero_Slark.Pounce.Impact": 1.0,
+   "Hero_Slark.Pounce.Leash": 1.0,
+   "Hero_Slark.Pounce.End": 1.0,
+   "Hero_Slark.ShadowDance": 1.0,
+   "Hero_Slark.Footsteps": 0.449707,
+   "Hero_Slark.IdleLoop": 0.299805,
+   "Hero_Slark.RazorFlip": 1.0,
+   "Hero_Slark.Pounce.Cast.Immortal": 0.8,
+   "Hero_Slark.Pounce.Impact.Immortal": 1.0,
+   "Hero_Slark.Pounce.Leash.Immortal": 1.0,
+   "Hero_Slark.DarkPact.PreCast.Immortal": 0.5,
+   "Hero_Slark.DarkPact.PreCast.Layer": 0.6,
+   "Hero_Slark.DarkPact.Cast.Immortal": 0.9,
+   "Hero_Slark.DarkPact.Cast.Layer": 1.0,
+   "Hero_Slark.DepthShroud": 1.0,
+   "Hero_Slark.SaltwaterShiv.PreAttack": 1.0,
+   "Hero_Slark.SaltwaterShiv.Target": 1.0
+  }
+ },
+ "windrunner": {
+  "events": {
+   "attack": "Hero_Windrunner.Attack",
+   "abilities": {
+    "windrunner_shackleshot": "Hero_Windrunner.ShackleshotCast",
+    "windrunner_powershot": "Ability.Powershot",
+    "windrunner_windrun": "Ability.Windrun",
+    "windrunner_gale_force": "Hero_Windrunner.GaleForce",
+    "windrunner_focusfire": "Ability.Focusfire"
+   }
+  },
+  "files": {
+   "Hero_Windrunner.Attack": [
+    "sounds/weapons/hero/windrunner/attack.vsnd"
+   ],
+   "Hero_Windrunner.ShackleshotCast": [
+    "sounds/weapons/hero/windrunner/shackleshot_cast.vsnd"
+   ],
+   "Ability.Powershot": [
+    "sounds/weapons/hero/windrunner/windrunner_powershot.vsnd"
+   ],
+   "Ability.Windrun": [
+    "sounds/weapons/hero/windrunner/windrun.vsnd"
+   ],
+   "Hero_Windrunner.GaleForce": [
+    "sounds/weapons/hero/windrunner/enc/gale_force.vsnd"
+   ],
+   "Ability.Focusfire": [
+    "sounds/weapons/hero/windrunner/focus_fire.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_Windrunner.Attack": 1.0,
+   "Hero_Windrunner.ProjectileImpact": 1.0,
+   "Hero_Windrunner.ShackleshotCast": 1.0,
+   "Hero_Windrunner.ShackleshotStun": 1.0,
+   "Hero_Windrunner.ShackleshotBind": 1.0,
+   "Ability.PowershotPull": 1.0,
+   "Ability.Powershot": 1.0,
+   "Hero_Windrunner.PowershotDamage": 1.0,
+   "Ability.Windrun": 0.699707,
+   "Ability.Focusfire": 0.699707,
+   "Hero_Windrunner.Footsteps": 0.299927,
+   "Ability.PowershotPull.Lyralei": 1.0,
+   "Ability.PowershotPull.Sparrowhawk": 1.0,
+   "Ability.PowershotPull.Stinger": 1.0,
+   "Ability.Powershot.Alt": 1.0,
+   "Hero_Windrunner.BlowYouAKiss": 1.0,
+   "Hero_Windrunner.Powershot.FalconBow": 1.0,
+   "Hero_Windrunner.ShackleshotStun.TI8": 1.0,
+   "Hero_Windrunner.ShackleshotStun.TI8_layer": 1.0,
+   "Hero_Windrunner.ShackleshotBind.TI8": 1.0,
+   "Hero_Windrunner.ShackleshotBind.TI8_layer": 0.8,
+   "Ability.PowershotPull.Arcana": 1.0,
+   "Hero_Windrunner.Powershot.Channel": 1.0,
+   "Ability.Focusfire.Arcana": 0.7,
+   "Hero_Windrunner.Focusfire.Arcana.Layer": 1.0,
+   "Hero_Windrunner.AltRun.Arcana": 1.0,
+   "Hero_Windrunner.Arcana.FocusFireSuccess": 1.0,
+   "Hero_Windrunner.Arcana.DamageTick": 0.1,
+   "Hero_Windrunner.GaleForce": 1.0,
+   "Ability.PowershotPull.Mh_bow": 1.0,
+   "Ability.PowershotPull.Mh_bow.layer": 1.0
+  }
+ },
+ "sven": {
+  "events": {
+   "attack": "Hero_Sven.Attack",
+   "abilities": {
+    "sven_storm_bolt": "Hero_Sven.StormBolt",
+    "sven_great_cleave": "Hero_Sven.GreatCleave",
+    "sven_warcry": "Hero_Sven.WarCry",
+    "sven_gods_strength": "Hero_Sven.GodsStrength"
+   }
+  },
+  "files": {
+   "Hero_Sven.Attack": [
+    "sounds/weapons/hero/sven/attack01.vsnd",
+    "sounds/weapons/hero/sven/attack02.vsnd",
+    "sounds/weapons/hero/sven/attack03.vsnd"
+   ],
+   "Hero_Sven.StormBolt": [
+    "sounds/weapons/hero/sven/storm_bolt.vsnd"
+   ],
+   "Hero_Sven.GreatCleave": [
+    "sounds/items/blade_fury.vsnd"
+   ],
+   "Hero_Sven.WarCry": [
+    "sounds/weapons/hero/sven/warcry.vsnd"
+   ],
+   "Hero_Sven.GodsStrength": [
+    "sounds/weapons/hero/sven/gods_strength.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_Sven.PreAttack": 0.89978,
+   "Hero_Sven.Attack": 0.5,
+   "Hero_Sven.Attack.Impact": 1.0,
+   "Hero_Sven.Attack.Ring": 0.5,
+   "Hero_Sven.GodsStrength.PreAttack": 0.89978,
+   "Hero_Sven.GodsStrength.Attack": 1.0,
+   "Hero_Sven.Layer.GodsStrength": 0.5,
+   "Hero_Sven.GreatCleave": 0.7,
+   "Hero_Sven.StormBolt": 1.0,
+   "Hero_Sven.StormBoltImpact": 1.0,
+   "Hero_Sven.WarCry": 1.0,
+   "Hero_Sven.WarCry.Shield": 1.0,
+   "Hero_Sven.GodsStrength": 1.0,
+   "Hero_Sven.Footsteps": 0.39978,
+   "Hero_Sven.IronWill": 0.699707,
+   "Hero_Sven.WarCry.Signet": 1.0,
+   "Hero_Sven.SignetLayer": 0.799805,
+   "Hero_Sven.GreatCleave.ti7": 0.8,
+   "Hero_Sven.Taunt2024": 1.0,
+   "Hero_Sven.IdleLoop.Automaton": 0.75,
+   "Hero_Sven.Automaton.Footsteps": 0.6,
+   "Hero_Sven.Automaton.Footsteps.Layer": 0.6
+  }
+ },
+ "legion_commander": {
+  "events": {
+   "attack": "Hero_LegionCommander.Attack",
+   "death": "Hero_LegionCommander.Death",
+   "abilities": {
+    "legion_commander_press_the_attack": "Hero_LegionCommander.PressTheAttack",
+    "legion_commander_moment_of_courage": "Hero_LegionCommander.Courage",
+    "legion_commander_duel": "Hero_LegionCommander.Duel"
+   }
+  },
+  "files": {
+   "Hero_LegionCommander.Attack": [
+    "sounds/weapons/hero/sven/attack01.vsnd",
+    "sounds/weapons/hero/sven/attack02.vsnd",
+    "sounds/weapons/hero/sven/attack03.vsnd"
+   ],
+   "Hero_LegionCommander.Death": [
+    "sounds/physics/deaths/specials/phantomlancer_death.vsnd"
+   ],
+   "Hero_LegionCommander.PressTheAttack": [
+    "sounds/weapons/hero/legion_commander/press_cast.vsnd"
+   ],
+   "Hero_LegionCommander.Courage": [
+    "sounds/weapons/hero/legion_commander/moc.vsnd"
+   ],
+   "Hero_LegionCommander.Duel": [
+    "sounds/weapons/hero/legion_commander/duel.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_LegionCommander.PreAttack": 1.0,
+   "Hero_LegionCommander.Attack": 1.0,
+   "Hero_LegionCommander.Attack.Gore": 0.449707,
+   "Hero_LegionCommander.Overwhelming.Cast": 0.5,
+   "Hero_LegionCommander.Overwhelming.Location": 1.0,
+   "Hero_LegionCommander.Overwhelming.Hero": 1.0,
+   "Hero_LegionCommander.Overwhelming.Creep": 0.5,
+   "Hero_LegionCommander.Overwhelming.Buff": 1.0,
+   "Hero_LegionCommander.PressTheAttack": 1.0,
+   "Hero_LegionCommander.Courage": 1.0,
+   "Hero_LegionCommander.Duel.Cast": 1.0,
+   "Hero_LegionCommander.Duel.Cast.Arcana": 0.799805,
+   "Hero_LegionCommander.Duel.FP": 0.799805,
+   "Hero_LegionCommander.Duel": 0.799805,
+   "Hero_LegionCommander.Duel.Victory": 1.0,
+   "Hero_LegionCommander.Footsteps": 0.299805,
+   "Hero_LegionCommander.Death": 0.599609,
+   "Hero_LegionCommander.Overwhelming.Location.ti7": 1.0,
+   "Hero_LegionCommander.Taunt.TI9": 1.0,
+   "Hero_LegionCommander.Bellow.Cast": 1.0,
+   "Hero_LegionCommander.IdleLoop.Automaton": 0.66,
+   "Hero_LegionCommander.Overwhelming.Location.Monster": 0.5,
+   "Hero_LegionCommander.Overwhelming.Location.Layer": 1.0
+  }
+ },
+ "faceless_void": {
+  "events": {
+   "attack": "Hero_FacelessVoid.Attack",
+   "abilities": {
+    "faceless_void_time_walk": "Hero_FacelessVoid.TimeWalk",
+    "faceless_void_time_dilation": "Hero_FacelessVoid.TimeDilation.Cast",
+    "faceless_void_time_lock": "Hero_FacelessVoid.TimeLockImpact",
+    "faceless_void_chronosphere": "Hero_FacelessVoid.Chronosphere"
+   }
+  },
+  "files": {
+   "Hero_FacelessVoid.Attack": [
+    "sounds/weapons/hero/faceless_void/attack01.vsnd",
+    "sounds/weapons/hero/faceless_void/attack02.vsnd",
+    "sounds/weapons/hero/faceless_void/attack03.vsnd"
+   ],
+   "Hero_FacelessVoid.TimeWalk": [
+    "sounds/weapons/hero/faceless_void/time_walk.vsnd"
+   ],
+   "Hero_FacelessVoid.TimeDilation.Cast": [
+    "sounds/weapons/hero/faceless_void/time_dilation_cast.vsnd"
+   ],
+   "Hero_FacelessVoid.TimeLockImpact": [
+    "sounds/weapons/hero/faceless_void/faceless_void_timelockimpact.vsnd"
+   ],
+   "Hero_FacelessVoid.Chronosphere": [
+    "sounds/weapons/hero/faceless_void/chronosphere.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_FacelessVoid.PreAttack": 1.0,
+   "Hero_FacelessVoid.Attack": 1.0,
+   "Hero_FacelessVoid.Attack.Impact": 0.799805,
+   "Hero_FacelessVoid.TimeWalk": 1.0,
+   "Hero_FacelessVoid.TimeLockImpact": 0.699707,
+   "Hero_FacelessVoid.Chronosphere": 1.0,
+   "Hero_FacelessVoid.Footsteps": 0.299927,
+   "Hero_FacelessVoid.TimeWalk.Aeons": 1.0,
+   "Hero_FacelessVoid.TimeDilation.Cast": 1.0,
+   "Hero_FacelessVoid.TimeDilation.Target": 1.0,
+   "Hero_FacelessVoid.Chronosphere.MaceOfAeons": 1.0,
+   "Hero_FacelessVoid.FunkyFeets": 1.0,
+   "Hero_FacelessVoid.TimeDilation.Cast.ti7": 1.0,
+   "Hero_FacelessVoid.TimeDilation.Cast.ti7_layer": 1.0,
+   "Hero_FacelessVoid.Chronosphere.ti11": 1.0
+  }
+ },
+ "antimage": {
+  "events": {
+   "attack": "Hero_Antimage.Attack",
+   "abilities": {
+    "antimage_mana_break": "Hero_Antimage.ManaBreak",
+    "antimage_blink": "Hero_Antimage.Blink_in",
+    "antimage_counterspell": "Hero_Antimage.Counterspell.Cast",
+    "antimage_mana_void": "Hero_Antimage.ManaVoid"
+   }
+  },
+  "files": {
+   "Hero_Antimage.Attack": [
+    "sounds/weapons/hero/antimage/antimage_attack1.vsnd",
+    "sounds/weapons/hero/antimage/antimage_attack2.vsnd",
+    "sounds/weapons/hero/antimage/antimage_attack3.vsnd"
+   ],
+   "Hero_Antimage.ManaBreak": [
+    "sounds/weapons/hero/antimage/mana_break.vsnd"
+   ],
+   "Hero_Antimage.Blink_in": [
+    "sounds/weapons/hero/antimage/blink_in.vsnd"
+   ],
+   "Hero_Antimage.Counterspell.Cast": [
+    "sounds/weapons/hero/antimage/counterspell_cast.vsnd"
+   ],
+   "Hero_Antimage.ManaVoid": [
+    "sounds/weapons/hero/antimage/mana_void.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_Antimage.PreAttack": 1.0,
+   "Hero_Antimage.Attack": 1.0,
+   "Hero_Antimage.PreAttack.Persona": 1.0,
+   "Hero_Antimage.Attack.Persona": 1.0,
+   "Hero_Antimage.ManaBreak": 0.699707,
+   "Hero_Antimage.Blink_out": 1.0,
+   "Hero_Antimage.Blink_in": 1.0,
+   "Hero_Antimage.Blink_in.Persona": 1.0,
+   "Hero_Antimage.Counterspell.Cast": 1.0,
+   "Hero_Antimage.Counterspell.Absorb": 1.0,
+   "Hero_Antimage.Counterspell.Target": 1.0,
+   "Hero_Antimage.ManaVoidCast": 1.0,
+   "Hero_Antimage.ManaVoidCast.Persona": 1.0,
+   "Hero_Antimage.ManaVoid": 1.0,
+   "Hero_Antimage.Footsteps": 0.349792,
+   "Hero_Antimage.Footsteps.Persona": 0.349792,
+   "Hero_Antimage.Taunt.TI9": 1.0,
+   "Hero_Antimage.ManaBreak.LowMana": 0.8,
+   "Hero_Antimage.ManaBreak.Empowered": 1.0
+  }
+ },
+ "queenofpain": {
+  "events": {
+   "attack": "Hero_QueenOfPain.Attack",
+   "abilities": {
+    "queenofpain_shadow_strike": "Hero_QueenOfPain.ShadowStrike",
+    "queenofpain_blink": "Hero_QueenOfPain.Blink_in",
+    "queenofpain_scream_of_pain": "Hero_QueenOfPain.ScreamOfPain",
+    "queenofpain_sonic_wave": "Hero_QueenOfPain.SonicWave"
+   }
+  },
+  "files": {
+   "Hero_QueenOfPain.Attack": [
+    "sounds/weapons/hero/queenofpain/queenofpain_attack1.vsnd",
+    "sounds/weapons/hero/queenofpain/queenofpain_attack2.vsnd",
+    "sounds/weapons/hero/queenofpain/queenofpain_attack3.vsnd"
+   ],
+   "Hero_QueenOfPain.ShadowStrike": [
+    "sounds/weapons/hero/queenofpain/queenofpain_shadowstrike.vsnd"
+   ],
+   "Hero_QueenOfPain.Blink_in": [
+    "sounds/weapons/hero/queenofpain/blink_in.vsnd"
+   ],
+   "Hero_QueenOfPain.ScreamOfPain": [
+    "sounds/weapons/hero/queenofpain/queenofpain_screamofpain.vsnd"
+   ],
+   "Hero_QueenOfPain.SonicWave": [
+    "sounds/weapons/hero/queenofpain/queenofpain_sonicwave.vsnd"
+   ]
+  },
+  "vol": {
+   "Hero_QueenOfPain.Attack": 1.0,
+   "Hero_QueenOfPain.ArcanaAttack": 1.0,
+   "Hero_QueenOfPain.ProjectileImpact": 1.0,
+   "Hero_QueenOfPain.ShadowStrike": 1.0,
+   "Hero_QueenOfPain.Blink_out": 1.0,
+   "Hero_QueenOfPain.Blink_out.Arcana": 1.0,
+   "Hero_QueenOfPain.Blink_in": 1.0,
+   "Hero_QueenOfPain.Blink_in.Arcana": 0.75,
+   "Hero_QueenOfPain.Blink_in.Layer": 1.0,
+   "Hero_QueenOfPain.ScreamOfPain": 1.0,
+   "Hero_QueenOfPain.SonicWave.Precast.Arcana": 1.0,
+   "Hero_QueenOfPain.SonicWave": 0.8,
+   "Hero_QueenOfPain.SonicWave.ArcanaLayer": 1.0,
+   "Hero_QueenOfPain.SonicWave.Arcana.Target": 0.8,
+   "Hero_QueenOfPain.Footsteps": 0.349792,
+   "Hero_QueenOfPain.ShadowStrike.Target.TI8": 1.0,
+   "Hero_QueenOfPain.Arcana.AltRun": 1.0,
+   "Hero_QueenOfPain.Arcana.ComboDamageSummary": 1.0,
+   "Hero_QueenOfPain.Blink_out.Shard": 1.0,
+   "Hero_QueenOfPain.Blink_in.Shard": 1.0,
+   "Hero_QueenOfPain.Taunt2022": 0.66
+  }
+ }
+}

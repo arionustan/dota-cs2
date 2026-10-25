@@ -719,6 +719,7 @@ function CDotaCS:BridgeListenSounds()
         lastAttack[attacker] = now
         local name = attacker:GetUnitName()
         local snd = Lookup(ATTACK_SOUNDS, name)
+        if not snd and CS_HERO_SOUNDS then snd = CS_HERO_SOUNDS.attack[name] end
         if not snd and name:find("neutral", 1, true) then
             snd = attacker:IsRangedAttacker() and "n_creep_Ranged.Attack" or "n_creep_Melee.Attack"
         end
@@ -737,12 +738,13 @@ function CDotaCS:BridgeListenSounds()
         local unit = ev.entindex_killed and EntIndexToHScript(ev.entindex_killed)
         if not unit or unit:IsNull() or not unit.GetUnitName then return end
         local snd = Lookup(DEATH_SOUNDS, unit:GetUnitName())
+        if not snd and CS_HERO_SOUNDS then snd = CS_HERO_SOUNDS.death[unit:GetUnitName()] end
         if snd then self:BridgeSound(snd, unit:GetAbsOrigin()) end
     end, nil)
 
     ListenToGameEvent("dota_player_used_ability", function(ev)
         if not self.bridge then return end
-        local snd = ABILITY_SOUNDS[ev.abilityname or ""]
+        local snd = ABILITY_SOUNDS[ev.abilityname or ""] or (CS_HERO_SOUNDS and CS_HERO_SOUNDS.ability[ev.abilityname or ""])
         local caster = ev.caster_entindex and EntIndexToHScript(ev.caster_entindex)
         -- Pudge's hook: show it flying in CS2 too
         if ev.abilityname == "pudge_meat_hook" and caster and not caster:IsNull() then

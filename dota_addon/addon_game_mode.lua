@@ -18,6 +18,7 @@ require("cs_weapons")
 require("cs_grenades")
 require("cs_drops")
 require("cs_pick")
+require("cs_hero_sounds")
 require("cs_bridge")
 
 LinkLuaModifier("modifier_cs_player", "modifiers/modifier_cs_player", LUA_MODIFIER_MOTION_NONE)
