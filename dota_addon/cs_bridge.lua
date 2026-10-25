@@ -714,6 +714,11 @@ local SPELL_FX = {
     { "lion_finger_of_death", "lightning" }, { "lion_impale", "boom" }, { "faceless_void_chronosphere", "blink" },
     { "antimage_mana_void", "he" }, { "crystal_maiden_crystal_nova", "he" }, { "queenofpain_sonic_wave", "he" },
     { "legion_commander_duel", "boom" }, { "axe_culling_blade", "boom" }, { "windrunner_powershot", "blink" },
+    { "dragon_knight_breathe_fire", "fire" }, { "huskar_", "fire" }, { "ogre_magi_fireblast", "boom" }, { "ogre_magi_ignite", "fire" },
+    { "tidehunter_ravage", "boom" }, { "kunkka_torrent", "he" }, { "kunkka_ghostship", "boom" }, { "necrolyte_reapers_scythe", "boom" },
+    { "skeleton_king_hellfire_blast", "fire" }, { "mirana_starfall", "lightning" }, { "riki_blink_strike", "blink" },
+    { "bloodseeker_rupture", "he" }, { "shadow_shaman_ether_shock", "lightning" }, { "witch_doctor_paralyzing_cask", "he" },
+    { "ursa_earthshock", "boom" }, { "bristleback_quill_spray", "he" }, { "viper_viper_strike", "he" },
 }
 
 function CDotaCS:BridgeSpellFx(abilityName, caster)
