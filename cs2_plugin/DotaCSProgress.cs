@@ -83,6 +83,7 @@ public partial class DotaCSBridge
             if (ConVar.Find("sv_cheats")?.GetPrimitiveValue<bool>() != true) { p.PrintToChat(" Только с sv_cheats 1"); return; }
             AddMoney(p, 16000);
         });
+        AddCommand("css_hpflip", "turn HP bars around if they look mirrored", (p, _) => { _hpFlip = !_hpFlip; p?.PrintToChat(" Хп-бары развёрнуты"); });
         AddCommand("css_gun", "buy a gun for either team: ak47 / awp / m4 / deagle", (p, i) => { if (p != null) BuyGun(p, i.ArgCount > 1 ? i.GetArg(1) : "ak47"); });
         AddCommandListener("say", OnSay);
         AddCommandListener("say_team", OnSay);
@@ -360,9 +361,10 @@ public partial class DotaCSBridge
             t.FontSize = 50; t.WorldUnitsPerPx = 0.2f;
             t.Color = System.Drawing.Color.FromArgb(255, 255, 220, 80);
             t.JustifyHorizontal = PointWorldTextJustifyHorizontal_t.POINT_WORLD_TEXT_JUSTIFY_HORIZONTAL_CENTER;
-            t.ReorientMode = PointWorldTextReorientMode_t.POINT_WORLD_TEXT_REORIENT_AROUND_UP;
+            t.ReorientMode = PointWorldTextReorientMode_t.POINT_WORLD_TEXT_REORIENT_NONE;
             t.DispatchSpawn();
             t.Teleport(new Vector(at.X, at.Y, at.Z + 70), null, null);
+            _billboards.Add(t);
             var l = Utilities.CreateEntityByName<COmniLight>("light_omni2");
             if (l != null)
             {

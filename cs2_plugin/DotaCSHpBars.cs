@@ -30,6 +30,17 @@ public partial class DotaCSBridge
             }
         }
 
+        // rune labels, ward markers: also stood up and turned to the nearest player
+        _billboards.RemoveAll(b => !b.IsValid);
+        if (players.Count > 0)
+            foreach (var b in _billboards)
+            {
+                var bp = b.AbsOrigin;
+                if (bp == null) continue;
+                var nb = players.OrderBy(p => (p.X - bp.X) * (p.X - bp.X) + (p.Y - bp.Y) * (p.Y - bp.Y)).First();
+                b.Teleport(null, new QAngle(0, (float)(Math.Atan2(nb.Y - bp.Y, nb.X - bp.X) * 180 / Math.PI) + 90 + (_hpFlip ? 180 : 0), 90), null);
+            }
+
         foreach (var id in _hpBar.Keys.ToList())
             if (!wanted.ContainsKey(id.TrimEnd('#')))
             {
@@ -46,13 +57,20 @@ public partial class DotaCSBridge
                       : frac > 0.3f ? System.Drawing.Color.FromArgb(255, 235, 200, 40)
                       : System.Drawing.Color.FromArgb(255, 230, 50, 40);
             // the bar itself and, under it, the numbers
-            HpText(id, new string('█', filled) + new string('▁', segs - filled), w.Pos, color, w.Hero ? 100 : 80, w.Hero ? 0.25f : 0.24f, true);
-            HpText(id + "#", $"{Math.Max(0, w.Hp)} / {w.Max}", new Vector(w.Pos.X, w.Pos.Y, w.Pos.Z - (w.Hero ? 26 : 20)),
-                System.Drawing.Color.FromArgb(255, 245, 245, 245), w.Hero ? 70 : 56, 0.22f, false);
+            // stand the text up and turn it to the nearest CS player (point_worldtext lies flat by default)
+            var near = players.OrderBy(p => (p.X - w.Pos.X) * (p.X - w.Pos.X) + (p.Y - w.Pos.Y) * (p.Y - w.Pos.Y)).First();
+            var yawTo = (float)(Math.Atan2(near.Y - w.Pos.Y, near.X - w.Pos.X) * 180 / Math.PI);
+            var ang = new QAngle(0, yawTo + 90 + (_hpFlip ? 180 : 0), 90);
+            HpText(id, new string('█', filled) + new string('▁', segs - filled), w.Pos, ang, color, w.Hero ? 90 : 70, 0.2f, true);
+            HpText(id + "#", $"{Math.Max(0, w.Hp)} / {w.Max}", new Vector(w.Pos.X, w.Pos.Y, w.Pos.Z - (w.Hero ? 24 : 18)), ang,
+                System.Drawing.Color.FromArgb(255, 255, 255, 255), w.Hero ? 64 : 50, 0.2f, false);
         }
     }
 
-    private void HpText(string id, string text, Vector pos, System.Drawing.Color color, int font, float upp, bool background)
+    private bool _hpFlip;
+    private readonly List<CPointWorldText> _billboards = new();
+
+    private void HpText(string id, string text, Vector pos, QAngle ang, System.Drawing.Color color, int font, float upp, bool background)
     {
         if (!_hpBar.TryGetValue(id, out var bar) || !bar.IsValid)
         {
@@ -65,13 +83,12 @@ public partial class DotaCSBridge
                 bar.Fullbright = true;
                 bar.FontSize = font;
                 bar.WorldUnitsPerPx = upp;
-                bar.FontName = "Arial Black";
                 bar.DrawBackground = background;
                 bar.BackgroundBorderWidth = 3f; bar.BackgroundBorderHeight = 1.5f;
                 bar.Color = color;
                 bar.JustifyHorizontal = PointWorldTextJustifyHorizontal_t.POINT_WORLD_TEXT_JUSTIFY_HORIZONTAL_CENTER;
                 bar.JustifyVertical = PointWorldTextJustifyVertical_t.POINT_WORLD_TEXT_JUSTIFY_VERTICAL_CENTER;
-                bar.ReorientMode = PointWorldTextReorientMode_t.POINT_WORLD_TEXT_REORIENT_AROUND_UP;
+                bar.ReorientMode = PointWorldTextReorientMode_t.POINT_WORLD_TEXT_REORIENT_NONE;
                 bar.DispatchSpawn();
                 _hpBar[id] = bar; _hpBarText[id] = text;
             }
@@ -85,6 +102,6 @@ public partial class DotaCSBridge
             Utilities.SetStateChanged(bar, "CPointWorldText", "m_messageText");
             Utilities.SetStateChanged(bar, "CPointWorldText", "m_Color");
         }
-        bar.Teleport(pos, null, null);
+        bar.Teleport(pos, ang, null);
     }
 }

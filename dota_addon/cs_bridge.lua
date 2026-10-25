@@ -162,15 +162,18 @@ function CDotaCS:BridgeHeroLines()
             local name = hero:GetUnitName():gsub("npc_dota_hero_", "")
             -- what the hero is doing right now, so CS2 plays the matching animation
             local act = "-"
+            local now = GameRules:GetGameTime()
             local ab = hero:GetCurrentActiveAbility()
-            if ab and not ab:IsNull() then
+            if hero.csActUntil and now < hero.csActUntil then
+                act = hero.csActKind or "cast"                          -- a spell just went off: hold its animation
+            elseif ab and not ab:IsNull() then
                 local an = ab:GetAbilityName()
                 act = (an == "pudge_meat_hook") and "hook" or (an == "pudge_dismember") and "ult"
                     or (ab:GetAbilityType() == DOTA_ABILITY_TYPE_ULTIMATE) and "ult" or "cast"
             elseif hero:IsStunned() then
                 act = "stun"
-            elseif hero:IsAttacking() then
-                act = "attack"
+            elseif (hero.csAttackUntil and now < hero.csAttackUntil) or (hero:IsAttacking() and not hero:IsMoving()) then
+                act = "attack"                                          -- a real swing, not just walking to the target
             end
             -- visible effects on the hero (Rot cloud...)
             local fx = hero:HasModifier("modifier_pudge_rot") and "rot" or "-"
@@ -469,7 +472,10 @@ function CDotaCS:OnProxyDamaged(unit, attacker, damage)
     unit.lastHitBy = attacker
     unit.lastHitTime = GameRules:GetGameTime()
     -- towers, fountain, creeps, Roshan: show the shot in CS2
-    if attacker and not attacker:IsNull() and attacker.IsHero and not attacker:IsHero() then
+    if attacker and not attacker:IsNull() and attacker.IsHero and attacker:IsHero() then
+        attacker.csAttackUntil = GameRules:GetGameTime() + 0.6
+    end
+    if attacker and not attacker:IsNull() and attacker.IsHero and (not attacker:IsHero() or attacker:IsRangedAttacker()) then
         local p = attacker:GetAbsOrigin()
         local ax, ay = ToCS(p)
         self:BridgeCommand(bridge, string.format("C R %s %.0f %.0f %.0f", unit.csSlot, ax, ay, p.z))
@@ -731,10 +737,15 @@ function CDotaCS:BridgeSpellFx(abilityName, caster)
     for _, e in ipairs(SPELL_FX) do
         if abilityName:find(e[1], 1, true) then kind = e[2] break end
     end
-    if not kind then return end
+    if not kind then
+        if abilityName:find("^item_") then return end
+        kind = "magic"                                                  -- any other hero spell: a generic flash
+    end
     local pos = caster:GetAbsOrigin()
+    local tgt = caster.GetCursorCastTarget and caster:GetCursorCastTarget()
     local cur = caster:GetCursorPosition()
-    if cur and cur:Length2D() > 1 and (cur - pos):Length2D() < 2500 then pos = cur end
+    if tgt and not tgt:IsNull() then pos = tgt:GetAbsOrigin()
+    elseif cur and cur:Length2D() > 1 and (cur - pos):Length2D() < 2500 then pos = cur end
     local bridge = self.bridge
     if not bridge then return end
     local near = false
@@ -757,6 +768,7 @@ function CDotaCS:BridgeListenSounds()
         local attacker = ev.entindex_attacker and EntIndexToHScript(ev.entindex_attacker)
         if not attacker or attacker:IsNull() or not attacker.GetUnitName then return end
         local now = GameRules:GetGameTime()
+        if attacker.IsHero and attacker:IsHero() then attacker.csAttackUntil = now + 0.6 end
         if lastAttack[attacker] and now - lastAttack[attacker] < 0.3 then return end
         lastAttack[attacker] = now
         local name = attacker:GetUnitName()
@@ -797,7 +809,16 @@ function CDotaCS:BridgeListenSounds()
             table.insert(self.bridge.outbox, string.format("E HK %d %.0f %.0f %.0f %.3f %.3f", caster:entindex(), x, y, o.z, dir.x, dir.y))
         end
         if snd and caster and not caster:IsNull() then self:BridgeSound(snd, caster:GetAbsOrigin()) end
-        if caster and not caster:IsNull() then self:BridgeSpellFx(ev.abilityname or "", caster) end
+        if caster and not caster:IsNull() then
+            local an = ev.abilityname or ""
+            if not an:find("^item_") and caster.IsHero and caster:IsHero() then
+                local ab = caster:FindAbilityByName(an)
+                local ult = ab and ab:GetAbilityType() == DOTA_ABILITY_TYPE_ULTIMATE
+                caster.csActKind = (an == "pudge_meat_hook") and "hook" or ult and "ult" or "cast"
+                caster.csActUntil = GameRules:GetGameTime() + 0.9
+            end
+            self:BridgeSpellFx(an, caster)
+        end
     end, nil)
 end
 

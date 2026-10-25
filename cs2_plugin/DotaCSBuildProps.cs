@@ -114,6 +114,13 @@ public partial class DotaCSBridge
         ["lightning"] = new[] { "particles/environment/de_train/train_lightning.vpcf", "particles/generic_fx/fx_electric_arc_spark.vpcf" },
         ["blink"] = new[] { "particles/generic_fx/fx_electricspark_glow_large.vpcf" },
         ["he"] = new[] { "particles/entity/env_explosion/explosion_hegrenade_a.vpcf" },
+        ["magic"] = new[] { "particles/generic_fx/fx_electricspark_glow_large.vpcf" },
+    };
+    private static readonly Dictionary<string, System.Drawing.Color> SpellLight = new()
+    {
+        ["fire"] = System.Drawing.Color.FromArgb(255, 255, 120, 30), ["boom"] = System.Drawing.Color.FromArgb(255, 255, 200, 120),
+        ["lightning"] = System.Drawing.Color.FromArgb(255, 120, 180, 255), ["blink"] = System.Drawing.Color.FromArgb(255, 200, 120, 255),
+        ["he"] = System.Drawing.Color.FromArgb(255, 255, 230, 160), ["magic"] = System.Drawing.Color.FromArgb(255, 150, 120, 255),
     };
 
     private static void PrecacheSpellFx(ResourceManifest m)
@@ -125,6 +132,18 @@ public partial class DotaCSBridge
     {
         if (!SpellFx.TryGetValue(kind, out var list)) return;
         foreach (var f in list) StartFx(f, at, 4f);
+        // a short flash of light so the spell is seen even when the particle is small
+        try
+        {
+            var l = Utilities.CreateEntityByName<COmniLight>("light_omni2");
+            if (l != null && SpellLight.TryGetValue(kind, out var c))
+            {
+                l.Color = c; l.Brightness = 8f; l.Range = 500f; l.CastShadows = 0; l.Enabled = true;
+                l.DispatchSpawn(); l.Teleport(new Vector(at.X, at.Y, at.Z + 60), null, null);
+                AddTimer(0.5f, () => { if (l.IsValid) l.Remove(); });
+            }
+        }
+        catch { }
         Diag("spell fx " + kind);
     }
 

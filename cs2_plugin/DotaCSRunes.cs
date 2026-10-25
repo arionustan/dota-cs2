@@ -154,10 +154,11 @@ public partial class DotaCSBridge
                 t.Color = kind.Color;
                 t.JustifyHorizontal = PointWorldTextJustifyHorizontal_t.POINT_WORLD_TEXT_JUSTIFY_HORIZONTAL_CENTER;
                 t.JustifyVertical = PointWorldTextJustifyVertical_t.POINT_WORLD_TEXT_JUSTIFY_VERTICAL_CENTER;
-                t.ReorientMode = PointWorldTextReorientMode_t.POINT_WORLD_TEXT_REORIENT_AROUND_UP;
+                t.ReorientMode = PointWorldTextReorientMode_t.POINT_WORLD_TEXT_REORIENT_NONE;
                 t.DispatchSpawn();
                 t.Teleport(new Vector(s.X, s.Y, s.Z + 110), null, null);
                 r.Label = t;
+                _billboards.Add(t);
             }
         }
         catch (Exception e) { Logger.LogWarning("DotaCS rune: {Error}", e.Message); }

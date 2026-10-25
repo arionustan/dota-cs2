@@ -868,12 +868,12 @@ public partial class DotaCSBridge : BasePlugin
         {
             var beam = Utilities.CreateEntityByName<CBeam>("beam")!;
             beam.Render = System.Drawing.Color.FromArgb(255, 255, 200, 80);
-            beam.Width = 2f; beam.EndWidth = 1f;
+            beam.Width = 5f; beam.EndWidth = 3f;
             beam.DispatchSpawn();
             beam.Teleport(from, new QAngle(0, 0, 0), new Vector(0, 0, 0));
             beam.EndPos.X = vp.X; beam.EndPos.Y = vp.Y; beam.EndPos.Z = vp.Z + 40;
             Utilities.SetStateChanged(beam, "CBeam", "m_vecEndPos");
-            _tracers.Add((beam, Server.CurrentTime + 0.15f));
+            _tracers.Add((beam, Server.CurrentTime + 0.25f));
         }
         catch (Exception e) { Logger.LogWarning("DotaCS tracer: {Error}", e.Message); }
     }
