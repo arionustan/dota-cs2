@@ -18,6 +18,7 @@ function modifier_cs_proxy:DeclareFunctions()
     return {
         MODIFIER_PROPERTY_MIN_HEALTH,
         MODIFIER_EVENT_ON_TAKEDAMAGE,
+        MODIFIER_EVENT_ON_ATTACK,
     }
 end
 
@@ -31,5 +32,13 @@ function modifier_cs_proxy:OnTakeDamage(params)
     if params.unit ~= self:GetParent() then return end
     if GameRules.DotaCS and GameRules.DotaCS.OnProxyDamaged then
         GameRules.DotaCS:OnProxyDamaged(self:GetParent(), params.attacker, params.damage)
+    end
+end
+
+-- fires for every attack in the game (global modifier event): ranged ones fly into CS2 as real Dota projectiles
+function modifier_cs_proxy:OnAttack(params)
+    if not IsServer() then return end
+    if GameRules.DotaCS and GameRules.DotaCS.BridgeOnAttack then
+        GameRules.DotaCS:BridgeOnAttack(params.attacker, params.target)
     end
 end

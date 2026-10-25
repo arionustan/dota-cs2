@@ -83,7 +83,9 @@ public partial class DotaCSBridge : BasePlugin
         AddCommandListener("autobuy", OnBuy);
         AddCommandListener("rebuy", OnBuy);
         RegisterListener<Listeners.OnMapStart>(_ => SetupServer());
-        RegisterListener<Listeners.OnServerPrecacheResources>(m => { m.AddResource(PudgeModel); PrecacheExtra(m); PrecacheHeroes(m); });
+        RegisterListener<Listeners.OnServerPrecacheResources>(m => { m.AddResource(PudgeModel); PrecacheExtra(m); PrecacheHeroes(m); PrecacheDotaFx(m); });
+        RegisterListener<Listeners.OnTick>(() => { try { ProjFrame(); } catch { } });
+        AddCommand("css_pfx", "test a ported Dota effect", (p, i) => { if (p != null) PfxTest(p, i.ArgCount > 1 ? i.GetArg(1) : ""); });
         AddTimer(Interval, Tick, TimerFlags.REPEAT);
         AddTimer(30f, SetupServer, TimerFlags.REPEAT);   // keep the settings even if a config resets them
         SetupServer();
@@ -299,7 +301,8 @@ public partial class DotaCSBridge : BasePlugin
                 break;
 
             case "R" when c.Length >= 6:
-                // a tower / fountain / creep shot at this CS player: draw a short tracer
+                // a tower / fountain / creep shot at this CS player: draw a short tracer, unless the real Dota projectile just flew in
+                if (_projHitSlot.TryGetValue(player.Slot, out var ph) && Server.CurrentTime - ph < 0.6f) break;
                 DrawTracer(new Vector(F(c[3]), F(c[4]), F(c[5]) + 120), pawn);
                 break;
 
@@ -590,6 +593,8 @@ public partial class DotaCSBridge : BasePlugin
         if (e.Length >= 3 && e[1] == "AEGIS") { OnAegis(e); return; }
         if (e.Length >= 3 && e[1] == "SHARD") { OnShard(e); return; }
         if (e.Length >= 4 && e[1] == "M") { OnDotaChat(e); return; }
+        if (e.Length >= 8 && e[1] == "PJ") { OnDotaProjectile(e); return; }
+        if (e.Length >= 6 && e[1] == "PFX") { OnDotaSpellFx(e); return; }
         if (e.Length >= 6 && e[1] == "FX") { PlaySpellFx(e[2], new Vector(F(e[3]), F(e[4]), F(e[5]) + 20)); return; }
         if (e.Length >= 4 && e[1] == "K")
         {

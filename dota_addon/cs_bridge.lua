@@ -466,6 +466,33 @@ function CDotaCS:BridgeCommand(bridge, line)
 end
 
 -- a Dota hero or creep damaged a CS player
+-- an attack was launched somewhere: show it in CS2 (E PJ particle x y z target speed) when a CS player is near
+function CDotaCS:BridgeOnAttack(attacker, target)
+    local bridge = self.bridge
+    if not bridge or not attacker or attacker:IsNull() or not target or target:IsNull() then return end
+    local now = GameRules:GetGameTime()
+    if attacker.csLastAtk == now then return end                 -- every CS proxy gets the same global event
+    attacker.csLastAtk = now
+    if attacker.IsHero and attacker:IsHero() then attacker.csAttackUntil = now + 0.6 end
+    if not attacker:IsRangedAttacker() then return end
+    local pname = attacker.GetRangedProjectileName and attacker:GetRangedProjectileName() or ""
+    if not pname or pname == "" then return end
+    local near = false
+    local apos, tpos = attacker:GetAbsOrigin(), target:GetAbsOrigin()
+    for _, u in pairs(bridge.proxies) do
+        if u and not u:IsNull() and ((u:GetAbsOrigin() - apos):Length2D() < 2500 or (u:GetAbsOrigin() - tpos):Length2D() < 2500) then near = true break end
+    end
+    if not near then return end
+    local src = apos + Vector(0, 0, 100)
+    local att = attacker:ScriptLookupAttachment("attach_attack1")
+    if att and att > 0 then src = attacker:GetAttachmentOrigin(att) end
+    local speed = attacker.GetProjectileSpeed and attacker:GetProjectileSpeed() or 900
+    if not speed or speed <= 0 then speed = 900 end
+    local t = target.csSlot and ("p" .. target.csSlot) or ("e" .. target:entindex())
+    local x, y = ToCS(src)
+    table.insert(bridge.outbox, string.format("E PJ %s %.0f %.0f %.0f %s %.0f", pname, x, y, src.z, t, speed))
+end
+
 function CDotaCS:OnProxyDamaged(unit, attacker, damage)
     local bridge = self.bridge
     if not bridge or not unit.csSlot or damage <= 0 then return end
