@@ -29,8 +29,8 @@
 
 		"RingRadius"				"40"
 		"HealthBarOffset"			"200"
-		"VisionDaytimeRange"		"600"
-		"VisionNighttimeRange"		"600"
+		"VisionDaytimeRange"		"1800"
+		"VisionNighttimeRange"		"800"
 
 		"UnitRelationshipClass"		"DOTA_NPC_UNIT_RELATIONSHIP_TYPE_DEFAULT"
 	}

@@ -309,6 +309,14 @@ public partial class DotaCSBridge : BasePlugin
             case "K":
                 var dmg = (int)Math.Ceiling(F(c[3]));
                 if (dmg <= 0) break;
+                // kevlar works against Dota too: it takes a third of the hit and wears down
+                if (pawn.ArmorValue > 0)
+                {
+                    var absorbed = Math.Min(pawn.ArmorValue, dmg / 3);
+                    dmg -= absorbed;
+                    pawn.ArmorValue = Math.Max(0, pawn.ArmorValue - absorbed * 2);
+                    Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_ArmorValue");
+                }
                 if (pawn.Health - dmg <= 0)
                 {
                     var killer = c.Length > 4 ? Pretty(c[4]) : "Дота";
