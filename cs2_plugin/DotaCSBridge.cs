@@ -729,6 +729,7 @@ public partial class DotaCSBridge : BasePlugin
             $" {ChatColors.Green}7{ChatColors.Default} хилка  {ChatColors.Green}8{ChatColors.Default} вард  {ChatColors.Green}9{ChatColors.Default} уровень и вещи. Покупка: !buy salve / !buy ward на фонтане или в секретной лавке",
             $" Деньги и опыт за добивание крипов и героев, уровень даёт HP и урон. Рошан даёт Аегис, Тормент шард, стой 3 сек у аутпоста или фонаря чтобы захватить",
             $" Чат: {ChatColors.Green}!faq{ChatColors.Default} это меню, {ChatColors.Green}!3p{ChatColors.Default} третье лицо, обычный чат видят и в Доте",
+            $" Победа как в Доте: {ChatColors.Gold}снеси Древнего Света{ChatColors.Default}. Броня режет урон из Доты. Тестовые деньги: {ChatColors.Green}!money{ChatColors.Default}",
         };
         foreach (var l in lines) p.PrintToChat(l);
     }
