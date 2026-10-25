@@ -30,7 +30,28 @@ public partial class DotaCSBridge
             if (p.Length < 10 || p[0] != "B") continue;
             list.Add(new Building(p[1], F(p[2]), F(p[3]), F(p[4]), (int)F(p[5]), (int)F(p[6]), p[7] == "1", p[8] == "1", p[9]));
         }
-        if (list.Count > 0) _buildings = list;
+        if (list.Count > 0) { _buildings = list; CheckAncients(); }
+    }
+
+    // the match is decided like in Dota: whoever loses the Ancient (fort) loses. CS players are the Dire side.
+    private readonly Dictionary<string, bool> _fortAlive = new();
+
+    private void CheckAncients()
+    {
+        foreach (var b in _buildings)
+        {
+            if (!b.Name.Contains("fort")) continue;
+            var was = _fortAlive.TryGetValue(b.Name, out var w) && w;
+            _fortAlive[b.Name] = b.Alive;
+            if (!was || b.Alive) continue;
+            var csWin = b.Name.StartsWith("goodguys");
+            PlayStinger(csWin ? "dire_win" : "dire_lose");
+            Announce(csWin ? $" {ChatColors.Blue}ДРЕВНИЙ СВЕТА РАЗРУШЕН! КС ПОБЕДИЛИ!" : $" {ChatColors.Red}ДРЕВНИЙ ТЬМЫ РАЗРУШЕН! ДОТА ПОБЕДИЛА!");
+            foreach (var p in Utilities.GetPlayers())
+                if (p != null && p.IsValid && !p.IsBot)
+                    p.PrintToCenterHtml(csWin ? "<font color='#40a0ff' class='fontSize-xl'>КС ПОБЕДИЛИ!</font><br>Древний Света разрушен"
+                                              : "<font color='#ff4040' class='fontSize-xl'>ДОТА ПОБЕДИЛА!</font><br>Древний Тьмы разрушен", 10);
+        }
     }
 
     private static float BuildingRadius(string name) =>

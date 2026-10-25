@@ -61,12 +61,17 @@ function CDotaCS:BridgeEnsureBoss(name, pos)
     local radius = (name == "npc_dota_roshan") and 30000 or 1500
     for _, u in ipairs(FindUnitsInRadius(DOTA_TEAM_NEUTRALS, pos, nil, radius, DOTA_UNIT_TARGET_TEAM_BOTH,
         DOTA_UNIT_TARGET_ALL, DOTA_UNIT_TARGET_FLAG_INVULNERABLE + DOTA_UNIT_TARGET_FLAG_DEAD, FIND_ANY_ORDER, false)) do
-        if u:GetUnitName() == name then return end
+        if u:GetUnitName() == name then
+            -- seen alive: from now on a dead boss waits for its respawn time
+            self.bossSeen = self.bossSeen or {}
+            self.bossSeen[name .. math.floor(pos.x)] = true
+            return
+        end
     end
     self.bossRespawn = self.bossRespawn or {}
     local key = name .. math.floor(pos.x)
     local now = GameRules:GetGameTime()
-    if not self.bossRespawn[key] then self.bossRespawn[key] = now + (self.bossSeen and self.bossSeen[key] and 480 or 0) end
+    if not self.bossRespawn[key] then self.bossRespawn[key] = now + (self.bossSeen and self.bossSeen[key] and 660 or 0) end
     if now < self.bossRespawn[key] then return end
     self.bossRespawn[key] = nil
     self.bossSeen = self.bossSeen or {}

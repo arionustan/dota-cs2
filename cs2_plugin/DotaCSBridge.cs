@@ -566,7 +566,8 @@ public partial class DotaCSBridge : BasePlugin
     }
 
     // ------------------------------------------------------------ score, messages, hook chain
-    private const int WinScore = 10;   // first side to this many kills wins the match
+    private const int WinScore = 10;   // kill race, only used when KillLimitWins is on
+    private const bool KillLimitWins = false;   // the Ancient decides the match, like in Dota
     private int _csScore;
     private int _dotaScore;
 
@@ -608,8 +609,8 @@ public partial class DotaCSBridge : BasePlugin
 
     private void CheckWin()
     {
-        Announce($" Счёт: {ChatColors.Blue}КС {_csScore}{ChatColors.Default} : {ChatColors.Red}{_dotaScore} Дота{ChatColors.Default}  (до {WinScore})");
-        if (_csScore < WinScore && _dotaScore < WinScore) return;
+        Announce($" Счёт по убийствам: {ChatColors.Blue}КС {_csScore}{ChatColors.Default} : {ChatColors.Red}{_dotaScore} Дота{ChatColors.Default}  (побеждает тот, кто снесёт Древнего)");
+        if (!KillLimitWins || (_csScore < WinScore && _dotaScore < WinScore)) return;
         var cs = _csScore >= WinScore;
         PlayStinger(cs ? "dire_win" : "dire_lose");
         Announce(cs ? $" {ChatColors.Blue}КС ПОБЕДИЛИ!" : $" {ChatColors.Red}ДОТА ПОБЕДИЛА!");
