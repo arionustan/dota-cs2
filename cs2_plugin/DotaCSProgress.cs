@@ -501,6 +501,7 @@ public partial class DotaCSBridge
                     if (heroId != null && _heroes.TryGetValue(heroId, out var hs)) SetScore(p, hs.Kills, hs.Deaths, hs.Assists, hs.Level);
                 }
             }
+            Diag("progress second");
         }
         catch (Exception e) { Logger.LogWarning("DotaCS progress: {Error}", e.Message); }
     }

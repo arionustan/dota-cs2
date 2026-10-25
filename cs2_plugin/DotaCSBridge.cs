@@ -145,20 +145,20 @@ public partial class DotaCSBridge : BasePlugin
     {
         try
         {
-            ApplyIncoming();
-            SyncBots();
-            SyncUnits();
-            UpdateTrees();
-            UpdateBuildingProps();
-            UpdateHookThrows();
-            UpdateAmbient();
-            UpdateFreezes();
-            UpdateHooks();
-            UpdateCsPlayers();
-            UpdateTracers();
-            UpdateHpBars();
-            UpdateRunes();
-            UpdateProgress();
+            ApplyIncoming(); Diag("ApplyIncoming");
+            SyncBots(); Diag("SyncBots");
+            SyncUnits(); Diag("SyncUnits");
+            UpdateTrees(); Diag("UpdateTrees");
+            UpdateBuildingProps(); Diag("UpdateBuildingProps");
+            UpdateHookThrows(); Diag("UpdateHookThrows");
+            UpdateAmbient(); Diag("UpdateAmbient");
+            UpdateFreezes(); Diag("UpdateFreezes");
+            UpdateHooks(); Diag("UpdateHooks");
+            UpdateCsPlayers(); Diag("UpdateCsPlayers");
+            UpdateTracers(); Diag("UpdateTracers");
+            UpdateHpBars(); Diag("UpdateHpBars");
+            UpdateRunes(); Diag("UpdateRunes");
+            UpdateProgress(); Diag("UpdateProgress");
         }
         catch (Exception e)
         {
@@ -700,6 +700,10 @@ public partial class DotaCSBridge : BasePlugin
                        : $" {ChatColors.Gold}В Доте наступил день{ChatColors.Default}");
     }
 
+    // logs each stage once, so if the server ever dies the log shows the last thing that worked
+    private readonly HashSet<string> _diag = new();
+    private void Diag(string stage) { if (_diag.Add(stage)) Logger.LogInformation("DotaCS stage ok: {Stage}", stage); }
+
     // real night: dims the sun (light_environment) and the sky (env_sky); both are server entities in dotacs_arena
     private float _sunBright = -1, _skyBright = -1, _skyIntensity = -1;
     private System.Drawing.Color _sunColor, _skyTint;
@@ -708,6 +712,7 @@ public partial class DotaCSBridge : BasePlugin
     {
         try
         {
+            Diag("night start " + night);
             foreach (var sky in Utilities.FindAllEntitiesByDesignerName<CEnvSky>("env_sky"))
             {
                 if (_skyBright < 0) { _skyBright = sky.BrightnessScale; _skyTint = sky.TintColor; }
@@ -716,19 +721,7 @@ public partial class DotaCSBridge : BasePlugin
                 Utilities.SetStateChanged(sky, "CEnvSky", "m_flBrightnessScale");
                 Utilities.SetStateChanged(sky, "CEnvSky", "m_vTintColor");
             }
-            foreach (var l in Utilities.FindAllEntitiesByDesignerName<CLightEntity>("light_environment"))
-            {
-                var c = l.CLightComponent;
-                if (c == null) continue;
-                if (_sunBright < 0) { _sunBright = c.Brightness; _sunColor = c.Color; _skyIntensity = c.SkyIntensity; }
-                c.Brightness = night ? _sunBright * 0.18f : _sunBright;
-                c.Color = night ? System.Drawing.Color.FromArgb(255, 120, 140, 255) : _sunColor;
-                c.SkyIntensity = night ? _skyIntensity * 0.2f : _skyIntensity;
-                Utilities.SetStateChanged(l, "CLightComponent", "m_flBrightness");
-                Utilities.SetStateChanged(l, "CLightComponent", "m_Color");
-                Utilities.SetStateChanged(l, "CLightComponent", "m_flSkyIntensity");
-                Utilities.SetStateChanged(l, "CLightEntity", "m_CLightComponent");
-            }
+            Diag("night sky " + night);
         }
         catch (Exception e) { Logger.LogWarning("DotaCS: world night failed: {Error}", e.Message); }
     }
