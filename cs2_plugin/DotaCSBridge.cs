@@ -586,6 +586,7 @@ public partial class DotaCSBridge : BasePlugin
         if (e.Length >= 3 && e[1] == "AEGIS") { OnAegis(e); return; }
         if (e.Length >= 3 && e[1] == "SHARD") { OnShard(e); return; }
         if (e.Length >= 4 && e[1] == "M") { OnDotaChat(e); return; }
+        if (e.Length >= 6 && e[1] == "FX") { PlaySpellFx(e[2], new Vector(F(e[3]), F(e[4]), F(e[5]) + 20)); return; }
         if (e.Length >= 4 && e[1] == "K")
         {
             _csScore++;

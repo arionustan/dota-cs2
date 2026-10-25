@@ -704,6 +704,38 @@ function CDotaCS:BridgeSound(event, pos)
     table.insert(bridge.outbox, string.format("E S %s %.0f %.0f %.0f", event, x, y, pos.z))
 end
 
+-- a visible effect in CS2 for Dota spells (E FX kind x y z): fire, lightning, explosion, blink
+local SPELL_FX = {
+    { "lina_", "fire" }, { "phoenix_", "fire" }, { "ember_", "fire" }, { "jakiro_macropyre", "fire" },
+    { "zuus_", "lightning" }, { "leshrac_", "lightning" }, { "razor_", "lightning" }, { "disruptor_", "lightning" },
+    { "blink", "blink" }, { "time_walk", "blink" }, { "phantom_strike", "blink" }, { "pounce", "blink" }, { "shadow_dance", "blink" },
+    { "earthshaker_", "boom" }, { "sven_storm_bolt", "boom" }, { "sven_gods_strength", "boom" }, { "nevermore_requiem", "boom" },
+    { "nevermore_shadowraze", "fire" }, { "invoker_sun_strike", "fire" }, { "invoker_chaos_meteor", "fire" },
+    { "lion_finger_of_death", "lightning" }, { "lion_impale", "boom" }, { "faceless_void_chronosphere", "blink" },
+    { "antimage_mana_void", "he" }, { "crystal_maiden_crystal_nova", "he" }, { "queenofpain_sonic_wave", "he" },
+    { "legion_commander_duel", "boom" }, { "axe_culling_blade", "boom" }, { "windrunner_powershot", "blink" },
+}
+
+function CDotaCS:BridgeSpellFx(abilityName, caster)
+    local kind
+    for _, e in ipairs(SPELL_FX) do
+        if abilityName:find(e[1], 1, true) then kind = e[2] break end
+    end
+    if not kind then return end
+    local pos = caster:GetAbsOrigin()
+    local cur = caster:GetCursorPosition()
+    if cur and cur:Length2D() > 1 and (cur - pos):Length2D() < 2500 then pos = cur end
+    local bridge = self.bridge
+    if not bridge then return end
+    local near = false
+    for _, u in pairs(bridge.proxies) do
+        if u and not u:IsNull() and (u:GetAbsOrigin() - pos):Length2D() < CS_BRIDGE_SOUND_RANGE then near = true break end
+    end
+    if not near then return end
+    local x, y = ToCS(pos)
+    table.insert(bridge.outbox, string.format("E FX %s %.0f %.0f %.0f", kind, x, y, GetGroundPosition(pos, nil).z))
+end
+
 function CDotaCS:BridgeListenSounds()
     if self.bridgeSoundsOn then return end
     self.bridgeSoundsOn = true
@@ -755,6 +787,7 @@ function CDotaCS:BridgeListenSounds()
             table.insert(self.bridge.outbox, string.format("E HK %d %.0f %.0f %.0f %.3f %.3f", caster:entindex(), x, y, o.z, dir.x, dir.y))
         end
         if snd and caster and not caster:IsNull() then self:BridgeSound(snd, caster:GetAbsOrigin()) end
+        if caster and not caster:IsNull() then self:BridgeSpellFx(ev.abilityname or "", caster) end
     end, nil)
 end
 

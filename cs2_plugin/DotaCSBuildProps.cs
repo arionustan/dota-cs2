@@ -106,6 +106,28 @@ public partial class DotaCSBridge
     private const string FxHookImpact = "particles/units/heroes/hero_pudge/pudge_meathook_impact.vpcf";
     private const string FxBuildingDeath = "particles/explosions_fx/explosion_c4_500.vpcf";
 
+    // spell effects of Dota heroes, made of CS2's own particles (E FX kind x y z)
+    private static readonly Dictionary<string, string[]> SpellFx = new()
+    {
+        ["fire"] = new[] { "particles/inferno_fx/explosion_molotov_air.vpcf" },
+        ["boom"] = new[] { "particles/explosions_fx/explosion_c4_500.vpcf" },
+        ["lightning"] = new[] { "particles/environment/de_train/train_lightning.vpcf", "particles/generic_fx/fx_electric_arc_spark.vpcf" },
+        ["blink"] = new[] { "particles/generic_fx/fx_electricspark_glow_large.vpcf" },
+        ["he"] = new[] { "particles/entity/env_explosion/explosion_hegrenade_a.vpcf" },
+    };
+
+    private static void PrecacheSpellFx(ResourceManifest m)
+    {
+        foreach (var list in SpellFx.Values) foreach (var f in list) m.AddResource(f);
+    }
+
+    private void PlaySpellFx(string kind, Vector at)
+    {
+        if (!SpellFx.TryGetValue(kind, out var list)) return;
+        foreach (var f in list) StartFx(f, at, 4f);
+        Diag("spell fx " + kind);
+    }
+
     private CParticleSystem? StartFx(string effect, Vector at, float seconds, float cp1 = 0f)
     {
         try
