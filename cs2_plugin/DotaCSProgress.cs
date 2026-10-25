@@ -83,10 +83,33 @@ public partial class DotaCSBridge
             if (ConVar.Find("sv_cheats")?.GetPrimitiveValue<bool>() != true) { p.PrintToChat(" Только с sv_cheats 1"); return; }
             AddMoney(p, 16000);
         });
+        AddCommand("css_gun", "buy a gun for either team: ak47 / awp / m4 / deagle", (p, i) => { if (p != null) BuyGun(p, i.ArgCount > 1 ? i.GetArg(1) : "ak47"); });
         AddCommandListener("say", OnSay);
         AddCommandListener("say_team", OnSay);
         RegisterEventHandler<EventPlayerDeath>(OnHumanDeath);
         AddTimer(1f, ProgressSecond, CounterStrikeSharp.API.Modules.Timers.TimerFlags.REPEAT);
+    }
+
+    // CS "buy" refuses guns of the other team (a CT cannot buy an AK), so F1-F5 go through here
+    private static readonly Dictionary<string, (string Item, int Price, bool Primary)> Guns = new()
+    {
+        ["ak47"] = ("weapon_ak47", 2700, true), ["awp"] = ("weapon_awp", 4750, true),
+        ["m4"] = ("weapon_m4a1_silencer", 2900, true), ["deagle"] = ("weapon_deagle", 700, false),
+    };
+    private static readonly string[] Primaries = { "weapon_ak47", "weapon_awp", "weapon_m4a1_silencer", "weapon_m4a1", "weapon_famas", "weapon_galilar", "weapon_ssg08", "weapon_mp9", "weapon_mac10", "weapon_nova" };
+    private static readonly string[] Pistols = { "weapon_deagle", "weapon_usp_silencer", "weapon_hkp2000", "weapon_glock", "weapon_p250", "weapon_fiveseven", "weapon_tec9" };
+
+    private void BuyGun(CCSPlayerController p, string name)
+    {
+        var pawn = p.PlayerPawn.Value;
+        if (!p.PawnIsAlive || pawn?.AbsOrigin == null || !Guns.TryGetValue(name.ToLowerInvariant(), out var g)) return;
+        if (!AtShop(pawn.AbsOrigin)) { p.PrintToCenter("Закупка только на фонтане Тьмы или в секретной лавке"); return; }
+        var m = p.InGameMoneyServices;
+        if (m == null || m.Account < g.Price) { p.PrintToCenter($"Не хватает денег: нужно ${g.Price}"); return; }
+        foreach (var w in g.Primary ? Primaries : Pistols) p.RemoveItemByDesignerName(w);
+        p.GiveNamedItem(g.Item);
+        if (g.Primary && pawn.ArmorValue < 100) { p.GiveNamedItem("item_assaultsuit"); }
+        AddMoney(p, -g.Price);
     }
 
     // ------------------------------------------------------------ money, xp, levels

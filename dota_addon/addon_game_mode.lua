@@ -130,9 +130,9 @@ function CDotaCS:OnPlayerChat(keys)
     elseif text == "-bridge" then
         self:BridgeToggle(pid)
     elseif text == "-faq" or text == "!faq" then
-        self:Msg("DotaCS: -night / -day ночь и день (в КС тоже), -bridge мост вкл/выкл, -cs играть ксником прямо в Доте")
-        self:Msg("Гранаты из КС: HE и молотов x4 урона, флешка слепит героя (промахи и почти нет обзора), дым даёт ксникам 15 сек невидимости")
-        self:Msg("Ксники видят в КС только то, что видит их команда в Доте (туман войны)")
+        self:Msg("<font color='#ffc030'>DotaCS</font>: ксник из КС сидит в твоей Доте. Бей его скиллами, он стреляет в ответ")
+        self:Msg("Команды: -night / -day ночь и день, -bridge мост вкл/выкл, -cs сыграть ксником самому")
+        self:Msg("Гранаты из КС: HE и молотов бьют сильно, флешка слепит, дым прячет ксника на 15 сек")
     elseif text == "-night" then
         GameRules:SetTimeOfDay(0.8)      -- also darkens CS2 through the bridge
         self:Msg("Ночь")

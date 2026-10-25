@@ -88,6 +88,7 @@ public partial class DotaCSBridge
                 catch (Exception e) { Logger.LogWarning("DotaCS unit model {Model}: {Error}", u.Model, e.Message); continue; }
             }
 
+            UnitGlow(u, prop);
             var yaw = (float)(Math.Atan2(u.Fy, u.Fx) * 180.0 / Math.PI);
             prop.Teleport(new Vector(u.X, u.Y, u.Z), new QAngle(0, yaw + PudgeYawOffset, 0), null);
 
@@ -111,6 +112,7 @@ public partial class DotaCSBridge
         _unitAnim.Remove(id);
         _unitLastPos.Remove(id);
         _unitMoveTime.Remove(id);
+        _unitGlowOn.Remove(id);
     }
 
     // ------------------------------------------------------------ Dota sounds (E S event x y z)
@@ -214,6 +216,28 @@ public partial class DotaCSBridge
             prop.Glow.GlowRangeMin = 0;
             prop.Glow.GlowTeam = -1;
             prop.Glow.GlowType = 3;
+            Utilities.SetStateChanged(prop, "CBaseModelEntity", "m_Glow");
+        }
+        catch { }
+    }
+
+    // a thin dim outline on creeps, so it is clear what can be shot: Radiant red, Dire green, neutrals yellow
+    private readonly Dictionary<string, bool> _unitGlowOn = new();
+    private void UnitGlow(UnitState u, CDynamicProp prop)
+    {
+        if (_unitGlowOn.TryGetValue(u.Id, out var on) && on == u.Alive) return;
+        _unitGlowOn[u.Id] = u.Alive;
+        try
+        {
+            var m = u.Model;
+            var c = m.StartsWith("radiant") || m.Contains("_good_") ? System.Drawing.Color.FromArgb(255, 120, 30, 30)
+                  : m.StartsWith("lane_dire") || m.Contains("_bad_") ? System.Drawing.Color.FromArgb(255, 30, 100, 30)
+                  : System.Drawing.Color.FromArgb(255, 115, 95, 25);
+            prop.Glow.GlowColorOverride = c;
+            prop.Glow.GlowRange = u.Alive ? 1600 : 0;
+            prop.Glow.GlowRangeMin = 0;
+            prop.Glow.GlowTeam = -1;
+            prop.Glow.GlowType = u.Alive ? 3 : 0;
             Utilities.SetStateChanged(prop, "CBaseModelEntity", "m_Glow");
         }
         catch { }

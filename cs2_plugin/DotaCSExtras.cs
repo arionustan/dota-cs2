@@ -443,7 +443,7 @@ public partial class DotaCSBridge
         var pawn = shooter.PlayerPawn.Value;
         var o = pawn?.AbsOrigin;
         if (pawn == null || o == null) return false;
-        float sx = o.X, sy = o.Y, sz = o.Z + 64f;
+        var (sx, sy, sz) = EyeOf(pawn);
         float dx = x - sx, dy = y - sy, dz = z - sz;
         var dxy = dx * dx + dy * dy;
         if (dxy < 1f) return false;
@@ -458,6 +458,16 @@ public partial class DotaCSBridge
             var ddx = px - u.X; var ddy = py - u.Y;
             if (ddx * ddx + ddy * ddy > r * r || pz < u.Z - 25 || pz > u.Z + h) continue;
             if (t < bestT) { bestT = t; best = u; hitP = new Vector(px, py, pz); }
+        }
+        // heroes: measured cylinders, the head is the top part (x2.5)
+        var hero = HitHero(sx, sy, sz, dx, dy, dz, best == null ? 1.02f : bestT, out var heroT, out var head, out var heroP);
+        if (hero != null)
+        {
+            var hd = dmg * DmgMult(shooter.Slot) * (head ? HeadshotMult : 1f);
+            _hits.Enqueue(string.Format(Inv, "D {0} {1} {2} {3}", hero.Id, hd, shooter.Slot, weapon));
+            Blood(heroP, new Vector(dx, dy, dz));
+            if (head) shooter.PrintToCenterHtml("<font color='#ff4040'><b>В ГОЛОВУ!</b></font>", 1);
+            return true;
         }
         if (best == null) return false;
         _hits.Enqueue(string.Format(Inv, "D {0} {1} {2} {3}", best.Id, dmg * DmgMult(shooter.Slot), shooter.Slot, weapon));

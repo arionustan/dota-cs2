@@ -91,7 +91,7 @@ def build(unit):
         dst = os.path.basename(a[1]); shutil.copy(G + '/' + a[1], od + '/' + dst)
         at += D.animblock(k, rel + dst, k in ('idle', 'run', 'stun')); got[k] = a[0]
     tpl = open(D.__file__).read()
-    body = tpl[tpl.index("    v='''") + 8: tpl.index("'''%(rm, first")]
+    body = tpl[tpl.index("    v='''") + 9: tpl.index("'''%(rm, first")]
     open(od + '/' + unit + '.vmdl', 'w').write(body % (remaps, first or 'materials/default/default.vmat', meshtxt, at))
     print('HERO', unit, len(meshes), 'meshes', len(seen), 'mats', remaps.count('from'), 'remapped', got)
 

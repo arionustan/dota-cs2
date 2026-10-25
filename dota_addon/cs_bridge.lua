@@ -428,7 +428,12 @@ function CDotaCS:BridgeSmooth(unit)
         local f = unit:GetForwardVector()
         local nf = f + (unit.csFace - f) * 0.35
         nf.z = 0
-        if nf:Length2D() > 0.01 then unit:SetForwardVector(nf:Normalized()) end
+        if nf:Length2D() > 0.01 then
+            nf = nf:Normalized()
+            unit:SetForwardVector(nf)
+            -- Dota turns a unit back to its own "ideal" facing; FaceTowards moves that ideal facing too
+            unit:FaceTowards(unit:GetAbsOrigin() + unit.csFace * 200)
+        end
     end
     -- run animation with hysteresis, playback speed follows the real speed
     local speed = vel:Length2D()

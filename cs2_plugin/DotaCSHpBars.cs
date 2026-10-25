@@ -8,7 +8,7 @@ namespace DotaCSBridge;
 public partial class DotaCSBridge
 {
     private const float HpBarRange = 1800f;      // bars only near CS players (world text is not free)
-    private const int HpBarSegments = 10;
+    private const int HpBarSegments = 10, HpBarSegmentsHero = 14;
     private readonly Dictionary<string, CPointWorldText> _hpBar = new();
     private readonly Dictionary<string, string> _hpBarText = new();
 
@@ -20,18 +20,18 @@ public partial class DotaCSBridge
         if (players.Count > 0)
         {
             foreach (var h in _heroes.Values)
-                if (h.Alive && h.Visible && h.MaxHp > 0 && players.Min(p => Dist2(h.X, h.Y, p)) < HpBarRange * HpBarRange)
-                    wanted["h" + h.Id] = (new Vector(h.X, h.Y, h.Z + 255), h.Hp, h.MaxHp, true);
+                if (h.Alive && h.Visible && h.MaxHp > 0 && players.Min(p => Dist2(h.X, h.Y, p)) < HpBarRange)
+                    wanted["h" + h.Id] = (new Vector(h.X, h.Y, HeroFeetZ(h) + HeroCyl(h).Top + 40), h.Hp, h.MaxHp, true);
             foreach (var u in _units.Values)
             {
-                if (!u.Alive || u.MaxHp <= 0 || players.Min(p => Dist2(u.X, u.Y, p)) > HpBarRange * HpBarRange) continue;
+                if (!u.Alive || u.MaxHp <= 0 || players.Min(p => Dist2(u.X, u.Y, p)) > HpBarRange) continue;
                 var hgt = UnitHitbox.TryGetValue(u.Model, out var hb) ? Math.Max(hb.H, 70f) : 95f;
                 wanted["u" + u.Id] = (new Vector(u.X, u.Y, u.Z + hgt + 18), u.Hp, u.MaxHp, false);
             }
         }
 
         foreach (var id in _hpBar.Keys.ToList())
-            if (!wanted.ContainsKey(id))
+            if (!wanted.ContainsKey(id.TrimEnd('#')))
             {
                 if (_hpBar[id].IsValid) _hpBar[id].Remove();
                 _hpBar.Remove(id); _hpBarText.Remove(id);
@@ -40,40 +40,51 @@ public partial class DotaCSBridge
         foreach (var (id, w) in wanted)
         {
             var frac = Math.Clamp(w.Hp / (float)w.Max, 0f, 1f);
-            var filled = (int)Math.Ceiling(frac * HpBarSegments);
-            var text = new string('█', filled) + new string('▁', HpBarSegments - filled);
-            if (!_hpBar.TryGetValue(id, out var bar) || !bar.IsValid)
-            {
-                try
-                {
-                    bar = Utilities.CreateEntityByName<CPointWorldText>("point_worldtext")!;
-                    if (bar == null) continue;
-                    bar.MessageText = text;
-                    bar.Enabled = true;
-                    bar.Fullbright = true;
-                    bar.FontSize = w.Hero ? 90 : 60;
-                    bar.WorldUnitsPerPx = w.Hero ? 0.22f : 0.2f;   // about 120 / 80 units wide
-                    bar.DrawBackground = true;
-                    bar.BackgroundBorderWidth = 2f; bar.BackgroundBorderHeight = 1f;
-                    bar.JustifyHorizontal = PointWorldTextJustifyHorizontal_t.POINT_WORLD_TEXT_JUSTIFY_HORIZONTAL_CENTER;
-                    bar.JustifyVertical = PointWorldTextJustifyVertical_t.POINT_WORLD_TEXT_JUSTIFY_VERTICAL_CENTER;
-                    bar.ReorientMode = PointWorldTextReorientMode_t.POINT_WORLD_TEXT_REORIENT_AROUND_UP;
-                    bar.DispatchSpawn();
-                    _hpBar[id] = bar; _hpBarText[id] = "";
-                }
-                catch { continue; }
-            }
-            if (_hpBarText[id] != text)
-            {
-                _hpBarText[id] = text;
-                bar.MessageText = text;
-                bar.Color = frac > 0.6f ? System.Drawing.Color.FromArgb(255, 60, 220, 60)
-                          : frac > 0.3f ? System.Drawing.Color.FromArgb(255, 235, 200, 40)
-                          : System.Drawing.Color.FromArgb(255, 230, 50, 40);
-                Utilities.SetStateChanged(bar, "CPointWorldText", "m_messageText");
-                Utilities.SetStateChanged(bar, "CPointWorldText", "m_Color");
-            }
-            bar.Teleport(w.Pos, null, null);
+            var segs = w.Hero ? HpBarSegmentsHero : HpBarSegments;
+            var filled = (int)Math.Ceiling(frac * segs);
+            var color = frac > 0.6f ? System.Drawing.Color.FromArgb(255, 60, 220, 60)
+                      : frac > 0.3f ? System.Drawing.Color.FromArgb(255, 235, 200, 40)
+                      : System.Drawing.Color.FromArgb(255, 230, 50, 40);
+            // the bar itself and, under it, the numbers
+            HpText(id, new string('█', filled) + new string('▁', segs - filled), w.Pos, color, w.Hero ? 100 : 80, w.Hero ? 0.25f : 0.24f, true);
+            HpText(id + "#", $"{Math.Max(0, w.Hp)} / {w.Max}", new Vector(w.Pos.X, w.Pos.Y, w.Pos.Z - (w.Hero ? 26 : 20)),
+                System.Drawing.Color.FromArgb(255, 245, 245, 245), w.Hero ? 70 : 56, 0.22f, false);
         }
+    }
+
+    private void HpText(string id, string text, Vector pos, System.Drawing.Color color, int font, float upp, bool background)
+    {
+        if (!_hpBar.TryGetValue(id, out var bar) || !bar.IsValid)
+        {
+            try
+            {
+                bar = Utilities.CreateEntityByName<CPointWorldText>("point_worldtext")!;
+                if (bar == null) return;
+                bar.MessageText = text;
+                bar.Enabled = true;
+                bar.Fullbright = true;
+                bar.FontSize = font;
+                bar.WorldUnitsPerPx = upp;
+                bar.FontName = "Arial Black";
+                bar.DrawBackground = background;
+                bar.BackgroundBorderWidth = 3f; bar.BackgroundBorderHeight = 1.5f;
+                bar.Color = color;
+                bar.JustifyHorizontal = PointWorldTextJustifyHorizontal_t.POINT_WORLD_TEXT_JUSTIFY_HORIZONTAL_CENTER;
+                bar.JustifyVertical = PointWorldTextJustifyVertical_t.POINT_WORLD_TEXT_JUSTIFY_VERTICAL_CENTER;
+                bar.ReorientMode = PointWorldTextReorientMode_t.POINT_WORLD_TEXT_REORIENT_AROUND_UP;
+                bar.DispatchSpawn();
+                _hpBar[id] = bar; _hpBarText[id] = text;
+            }
+            catch { return; }
+        }
+        if (_hpBarText[id] != text)
+        {
+            _hpBarText[id] = text;
+            bar.MessageText = text;
+            bar.Color = color;
+            Utilities.SetStateChanged(bar, "CPointWorldText", "m_messageText");
+            Utilities.SetStateChanged(bar, "CPointWorldText", "m_Color");
+        }
+        bar.Teleport(pos, null, null);
     }
 }

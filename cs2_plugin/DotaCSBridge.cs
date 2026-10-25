@@ -71,11 +71,12 @@ public partial class DotaCSBridge : BasePlugin
         RegisterEventHandler<EventPlayerHurt>(OnPlayerHurt);
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
         RegisterEventHandler<EventBulletImpact>(OnBulletImpact);
+        RegisterEventHandler<EventWeaponFire>(OnWeaponFireKnife);
         RegisterEventHandler<EventHegrenadeDetonate>(OnHeDetonate);
         RegisterEventHandler<EventFlashbangDetonate>((ev, _) => { SendGrenade("flash", ev.X, ev.Y, ev.Z, ev.Userid); return HookResult.Continue; });
         RegisterEventHandler<EventSmokegrenadeDetonate>((ev, _) => { SendGrenade("smoke", ev.X, ev.Y, ev.Z, ev.Userid); return HookResult.Continue; });
         RegisterEventHandler<EventMolotovDetonate>((ev, _) => { SendGrenade("fire", ev.X, ev.Y, ev.Z, ev.Userid); return HookResult.Continue; });
-        AddCommand("css_faq", "DotaCS commands", (p, _) => { if (p != null) Faq(p); });
+        AddCommand("css_faq", "DotaCS commands", (p, i) => { if (p != null) Faq(p, i.ArgCount > 1 ? i.GetArg(1) : "1"); });
         RegisterProgress();
         RegisterEventHandler<EventPlayerDeath>((ev, _) => { if (ev.Userid != null && ev.Userid.IsValid && !ev.Userid.IsBot) PlayStinger("killed"); return HookResult.Continue; });
         AddCommandListener("buy", OnBuy);
@@ -410,7 +411,7 @@ public partial class DotaCSBridge : BasePlugin
             if (!bot.PawnIsAlive) { bot.Respawn(); continue; }
 
             CDynamicProp? prop = null;
-            if (UsePudgeModel) { HideBot(bot, pawn, hero.Name == "pudge" || !HeroModelNames.Contains(hero.Name) ? PudgeHitboxScale : HeroHitboxScale); prop = PropFor(heroId, hero.Name); }
+            if (UsePudgeModel) { HideBot(bot, pawn, 1f); prop = PropFor(heroId, hero.Name); }
             var heroPos = new Vector(hero.X, hero.Y, hero.Z);
             var yaw = (float)(Math.Atan2(hero.Fy, hero.Fx) * 180.0 / Math.PI);
 
@@ -437,7 +438,8 @@ public partial class DotaCSBridge : BasePlugin
                 z = pawn.AbsOrigin?.Z ?? FloorZ;
                 if (z < FloorZ - 100 || z > FloorZ + 400) z = FloorZ + 16;
             }
-            pawn.Teleport(new Vector(hero.X, hero.Y, z + 4), new QAngle(0, yaw, 0), new Vector(0, 0, 0));
+            // the bot only keeps the scoreboard row: hits are tested against the measured hero cylinder (DotaCSHeroHits.cs)
+            pawn.Teleport(new Vector(hero.X, hero.Y, z - 3000), new QAngle(0, yaw, 0), new Vector(0, 0, 0));
             if (prop != null)
             {
                 prop.Teleport(new Vector(hero.X, hero.Y, z), new QAngle(0, yaw + PudgeYawOffset, 0), null);
@@ -716,22 +718,34 @@ public partial class DotaCSBridge : BasePlugin
     }
 
     // ------------------------------------------------------------ !faq
-    private void Faq(CCSPlayerController p)
+    // short pages instead of one wall of text: !faq, !faq 2, !faq 3
+    private void Faq(CCSPlayerController p, string page = "1")
     {
-        string[] lines =
+        string[] lines = page switch
         {
-            $" {ChatColors.Gold}DotaCS: команды и кнопки",
-            $" {ChatColors.Green}F1{ChatColors.Default} AK  {ChatColors.Green}F2{ChatColors.Default} AWP  {ChatColors.Green}F3{ChatColors.Default} гранаты  {ChatColors.Green}F4{ChatColors.Default} дигл  {ChatColors.Green}F5{ChatColors.Default} M4",
-            $" {ChatColors.Green}F6{ChatColors.Default} третье лицо вкл/выкл  {ChatColors.Green}V{ChatColors.Default} полёт  {ChatColors.Green}K{ChatColors.Default} переподключиться",
-            $" {ChatColors.Green}H{ChatColors.Default} спрятать худ  {ChatColors.Green}J{ChatColors.Default} спрятать оружие  {ChatColors.Green}O{ChatColors.Default} чистый экран для записи",
-            $" Гранаты бьют и по Доте: {ChatColors.Red}HE и молотов x4 урона{ChatColors.Default}, флешка ослепляет героев, дым даёт невидимость в Доте на 15 сек",
-            $" Руны на местах рун Доты: подойди и коснись. Лотосы у пулов лотоса лечат до 100 HP",
-            $" Портал: постой 2 сек в портале. Закупка только на фонтане Тьмы",
-            $" {ChatColors.Green}F7/F8/F9/F10{ChatColors.Default} телепорт верх/мид/низ/база ($300, 3 сек)  {ChatColors.Green}F11{ChatColors.Default} байбек",
-            $" {ChatColors.Green}7{ChatColors.Default} хилка  {ChatColors.Green}8{ChatColors.Default} вард  {ChatColors.Green}9{ChatColors.Default} уровень и вещи. Покупка: !buy salve / !buy ward на фонтане или в секретной лавке",
-            $" Деньги и опыт за добивание крипов и героев, уровень даёт HP и урон. Рошан даёт Аегис, Тормент шард, стой 3 сек у аутпоста или фонаря чтобы захватить",
-            $" Чат: {ChatColors.Green}!faq{ChatColors.Default} это меню, {ChatColors.Green}!3p{ChatColors.Default} третье лицо, обычный чат видят и в Доте",
-            $" Победа как в Доте: {ChatColors.Gold}снеси Древнего Света{ChatColors.Default}. Броня режет урон из Доты. Тестовые деньги: {ChatColors.Green}!money{ChatColors.Default}",
+            "2" => new[]
+            {
+                $" {ChatColors.Gold}Как играть (2/3){ChatColors.Default}",
+                $" Стреляй по героям и крипам Доты. {ChatColors.Red}Голова = x2.5 урона{ChatColors.Default}",
+                $" За добивания деньги и опыт. Уровень = больше HP и урона",
+                $" Руны: подойди вплотную. Рошан даёт Аегис, Тормент шард",
+                $" Аутпост и фонарь: постой рядом 3 сек",
+                $" Гранаты бьют и по Доте, дым = невидимость там",
+            },
+            "3" => new[]
+            {
+                $" {ChatColors.Gold}Тестовые кнопки (3/3){ChatColors.Default}",
+                $" {ChatColors.Green}V{ChatColors.Default} полёт  {ChatColors.Green}N{ChatColors.Default} граната  {ChatColors.Green}L{ChatColors.Default} умереть  {ChatColors.Green}K{ChatColors.Default} переподключиться",
+                $" {ChatColors.Green}H{ChatColors.Default} худ  {ChatColors.Green}J{ChatColors.Default} оружие  {ChatColors.Green}O{ChatColors.Default} чистый экран  {ChatColors.Green}!money{ChatColors.Default} деньги",
+            },
+            _ => new[]
+            {
+                $" {ChatColors.Gold}DotaCS (1/3){ChatColors.Default}  Цель: {ChatColors.Gold}снести Древнего Света{ChatColors.Default}",
+                $" {ChatColors.Yellow}Оружие:{ChatColors.Default} {ChatColors.Green}F1{ChatColors.Default} AK  {ChatColors.Green}F2{ChatColors.Default} AWP  {ChatColors.Green}F3{ChatColors.Default} гранаты  {ChatColors.Green}F4{ChatColors.Default} дигл  {ChatColors.Green}F5{ChatColors.Default} M4",
+                $" {ChatColors.Yellow}Дота:{ChatColors.Default} {ChatColors.Green}F7-F10{ChatColors.Default} телепорт  {ChatColors.Green}F11{ChatColors.Default} байбек  {ChatColors.Green}7{ChatColors.Default} хилка  {ChatColors.Green}8{ChatColors.Default} вард  {ChatColors.Green}9{ChatColors.Default} инфо",
+                $" {ChatColors.Green}F6{ChatColors.Default} вид от 3 лица. Закупка на фонтане или в секретной лавке",
+                $" Дальше: {ChatColors.Green}!faq 2{ChatColors.Default} как играть, {ChatColors.Green}!faq 3{ChatColors.Default} тест-кнопки",
+            },
         };
         foreach (var l in lines) p.PrintToChat(l);
     }

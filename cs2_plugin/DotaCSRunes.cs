@@ -74,7 +74,7 @@ public partial class DotaCSBridge
             foreach (var p in humans)
             {
                 var o = p.PlayerPawn.Value!.AbsOrigin;
-                if (o == null || Dist2(s.X, s.Y, o) > RuneTouch * RuneTouch || Math.Abs(o.Z - s.Z) > 100) continue;
+                if (o == null || Dist2(s.X, s.Y, o) > RuneTouch || Math.Abs(o.Z - s.Z) > 100) continue;
                 PickRune(p, i);
                 break;
             }
@@ -251,7 +251,7 @@ public partial class DotaCSBridge
             {
                 var pawn = p.PlayerPawn.Value!;
                 var o = pawn.AbsOrigin;
-                if (o == null || Dist2(pool.X, pool.Y, o) > LotusTouch * LotusTouch || pawn.Health >= MaxHp(pawn)) continue;
+                if (o == null || Dist2(pool.X, pool.Y, o) > LotusTouch || pawn.Health >= MaxHp(pawn)) continue;
                 _lotusCount[i]--; if (_lotusCount[i] == LotusMax - 1) _lotusNext[i] = now + LotusGrow;
                 SyncLotusProps(i);
                 pawn.Health = MaxHp(pawn); Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
