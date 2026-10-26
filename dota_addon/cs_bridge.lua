@@ -780,29 +780,49 @@ local SPELL_FX = {
     { "ursa_earthshock", "boom" }, { "bristleback_quill_spray", "he" }, { "viper_viper_strike", "he" },
 }
 
+local FX_RADIUS_KEYS = { "radius", "aoe", "area_of_effect", "light_strike_array_aoe", "impact_radius", "slam_radius", "echo_slam_echo_range",
+    "torrent_aoe", "pull_radius", "crystal_nova_aoe", "nova_radius", "width", "end_radius", "start_radius" }
+local FX_SPEED_KEYS = { "speed", "projectile_speed", "bolt_speed", "dragon_slave_speed", "arrow_speed", "wave_speed", "dagger_speed",
+    "spear_speed", "fireball_speed", "ghostship_speed", "missile_speed", "axe_speed" }
+
+local function AbilityValue(ab, keys)
+    if not ab or ab:IsNull() then return 0 end
+    for _, k in ipairs(keys) do
+        local ok, v = pcall(function() return ab:GetSpecialValueFor(k) end)
+        if ok and v and v > 0 then return v end
+    end
+    return 0
+end
+
+-- a spell was cast: CS2 plays the real Dota effect for it (E AB ability cx cy cz tx ty tz target radius speed kind)
 function CDotaCS:BridgeSpellFx(abilityName, caster)
     local kind
     for _, e in ipairs(SPELL_FX) do
         if abilityName:find(e[1], 1, true) then kind = e[2] break end
     end
-    if not kind then
-        if abilityName:find("^item_") then return end
-        kind = "magic"                                                  -- any other hero spell: a generic flash
-    end
-    local pos = caster:GetAbsOrigin()
-    local tgt = caster.GetCursorCastTarget and caster:GetCursorCastTarget()
-    local cur = caster:GetCursorPosition()
-    if tgt and not tgt:IsNull() then pos = tgt:GetAbsOrigin()
-    elseif cur and cur:Length2D() > 1 and (cur - pos):Length2D() < 2500 then pos = cur end
+    kind = kind or "magic"
     local bridge = self.bridge
     if not bridge then return end
+    local cpos = caster:GetAbsOrigin()
+    local pos = cpos
+    local tgt = caster.GetCursorCastTarget and caster:GetCursorCastTarget()
+    local cur = caster:GetCursorPosition()
+    local tid = "-"
+    if tgt and not tgt:IsNull() then
+        pos = tgt:GetAbsOrigin()
+        tid = tgt.csSlot and ("p" .. tgt.csSlot) or ("e" .. tgt:entindex())
+    elseif cur and cur:Length2D() > 1 and (cur - cpos):Length2D() < 3000 then pos = cur end
     local near = false
     for _, u in pairs(bridge.proxies) do
-        if u and not u:IsNull() and (u:GetAbsOrigin() - pos):Length2D() < CS_BRIDGE_SOUND_RANGE then near = true break end
+        if u and not u:IsNull() and ((u:GetAbsOrigin() - pos):Length2D() < CS_BRIDGE_SOUND_RANGE or (u:GetAbsOrigin() - cpos):Length2D() < CS_BRIDGE_SOUND_RANGE) then near = true break end
     end
     if not near then return end
+    local ab = caster.FindAbilityByName and caster:FindAbilityByName(abilityName)
+    if not ab and caster.FindItemInInventory then ab = caster:FindItemInInventory(abilityName) end
+    local cx, cy = ToCS(cpos)
     local x, y = ToCS(pos)
-    table.insert(bridge.outbox, string.format("E FX %s %.0f %.0f %.0f", kind, x, y, GetGroundPosition(pos, nil).z))
+    table.insert(bridge.outbox, string.format("E AB %s %.0f %.0f %.0f %.0f %.0f %.0f %s %.0f %.0f %s", abilityName,
+        cx, cy, cpos.z, x, y, GetGroundPosition(pos, nil).z, tid, AbilityValue(ab, FX_RADIUS_KEYS), AbilityValue(ab, FX_SPEED_KEYS), kind))
 end
 
 function CDotaCS:BridgeListenSounds()

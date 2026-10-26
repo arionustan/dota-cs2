@@ -115,6 +115,23 @@ for %%Z in ("%PK%\dotafx*.zip") do (
     echo 1> "%CSA%\particles\_%%~nZ.txt"
   )
 )
+rem Real Dota effects rebuilt from source (tools/dota_fx_port.py): each dotafxsrc*.zip is unpacked and compiled once.
+set "NEWFX="
+for %%Z in ("%PK%\dotafxsrc*.zip") do (
+  if not exist "%CONT%\particles\_%%~nZ.txt" (
+    echo Unpacking Dota effects %%~nZ...
+    tar -xf "%%~Z" -C "%CONT%"
+    echo 1> "%CONT%\particles\_%%~nZ.txt"
+    set "NEWFX=1"
+  )
+)
+if defined NEWFX (
+  echo Compiling Dota effects, takes a few minutes...
+  "%RC%" -f -r -i "%CONT%\materials\*.vtex" >> "%CONT%\particles\_fx_compile_log.txt" 2>&1
+  "%RC%" -f -r -i "%CONT%\particles\*.vpcf" >> "%CONT%\particles\_fx_compile_log.txt" 2>&1
+  if not exist "%CSA%\particles" mkdir "%CSA%\particles"
+  copy /y "%CONT%\particles\dota_*.txt" "%CSA%\particles\" >nul
+)
 rem Dota heroes (tools/hero_build.py): every heroes*.zip is unpacked once, then each hero model compiles once.
 rem Compile output goes to models\dota_heroes\_compile_log.txt so problems can be read later.
 if not exist "%CONT%\models\dota_heroes" mkdir "%CONT%\models\dota_heroes"

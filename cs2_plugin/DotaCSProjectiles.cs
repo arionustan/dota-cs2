@@ -29,6 +29,7 @@ public partial class DotaCSBridge
     // every ported particle that is on disk gets precached (only the roots in particles/dota_ported.txt)
     private static void PrecacheDotaFx(ResourceManifest m)
     {
+        PortedFx.Clear(); AbilityFx.Clear();
         try
         {
             foreach (var root in new[] { Path.Combine(Server.GameDirectory, "csgo"), Server.GameDirectory })
@@ -42,6 +43,17 @@ public partial class DotaCSBridge
                     if (p.Length == 0 || !File.Exists(Path.Combine(root, p.Replace('/', Path.DirectorySeparatorChar) + "_c"))) continue;
                     PortedFx.Add(p); m.AddResource(p);
                 }
+                // ability|particle|mode (tools/dota_fx_port.py)
+                foreach (var line in Directory.GetFiles(dir, "dota_abilities*.txt").SelectMany(File.ReadAllLines))
+                {
+                    var q = line.Trim().Split('|');
+                    if (q.Length < 3) continue;
+                    foreach (var a in q[0].Split(','))
+                    {
+                        if (!AbilityFx.TryGetValue(a, out var l)) AbilityFx[a] = l = new();
+                        l.Add((q[1], q[2]));
+                    }
+                }
                 break;
             }
         }
@@ -49,6 +61,93 @@ public partial class DotaCSBridge
     }
 
     private static bool HasDotaFx(string p) => PortedFx.Contains(p);
+    private static readonly Dictionary<string, List<(string Fx, string Mode)>> AbilityFx = new();
+
+    // E AB ability cx cy cz tx ty tz target radius speed kind: the real Dota effect of a spell, placed like Dota places it
+    private void OnDotaAbility(string[] e)
+    {
+        if (e.Length < 13) return;
+        var caster = new Vector(F(e[3]), F(e[4]), F(e[5]));
+        var point = new Vector(F(e[6]), F(e[7]), F(e[8]));
+        var tgt = e[9]; var radius = F(e[10]); var speed = F(e[11]);
+        var unitTarget = tgt != "-";
+        var played = false;
+        if (AbilityFx.TryGetValue(e[2], out var list))
+            foreach (var (fx, mode) in list)
+            {
+                if (!HasDotaFx(fx)) continue;
+                var tpos = unitTarget ? ProjTargetPos(tgt) ?? point : point;
+                Proj? p = null;
+                var dx = point.X - caster.X; var dy = point.Y - caster.Y;
+                var len = (float)Math.Sqrt(dx * dx + dy * dy);
+                switch (mode)
+                {
+                    case "caster": p = SpawnDotaFx(fx, caster, caster, -1, null); break;
+                    case "point": p = SpawnDotaFx(fx, point, point, -1, null); break;
+                    case "vel":
+                        // linear projectile (Dragon Slave, Powershot...): CP1 is its velocity
+                        var sp = speed > 0 ? speed : 1100f;
+                        var v = len > 1 ? new Vector(dx / len * sp, dy / len * sp, 0) : new Vector(sp, 0, 0);
+                        p = SpawnDotaFx(fx, new Vector(caster.X, caster.Y, caster.Z + 60), null, 1, v);
+                        if (p != null) { p.Arrived = true; p.RemoveAt = Server.CurrentTime + Math.Clamp(1600f / sp + 1.5f, 1.5f, 5f); }
+                        break;
+                    case "track":
+                        // homing spell projectile (Storm Bolt, Paralyzing Cask...): flies to the target like an attack
+                        p = SpawnDotaFx(fx, new Vector(caster.X, caster.Y, caster.Z + 90), tpos, 2, new Vector(speed > 0 ? speed : 1000f, 0, 0));
+                        if (p != null) { p.Target = unitTarget ? tgt : ""; p.Speed = speed > 0 ? speed : 1000f; p.LastTarget = tpos; _projs.Add(p); }
+                        continue;
+                    case "radius":
+                        var r = radius > 0 ? radius : 300f;
+                        p = SpawnDotaFx(fx, unitTarget || len > 1 ? tpos : caster, null, 1, new Vector(r, r, r));
+                        break;
+                    default:
+                        // pos: a unit target gets CP0 on the caster and CP1 on the target (beams, Laguna, Finger); a point spell plays at the point
+                        p = unitTarget ? SpawnDotaFx(fx, new Vector(caster.X, caster.Y, caster.Z + 80), tpos, -1, null)
+                                       : SpawnDotaFx(fx, len > 1 ? point : caster, len > 1 ? point : caster, -1, null);
+                        if (p != null && unitTarget) p.Target = tgt;
+                        break;
+                }
+                if (p == null) continue;
+                played = true;
+                if (!p.Arrived) { p.Arrived = true; p.RemoveAt = Server.CurrentTime + 5f; }
+                _projs.Add(p);
+            }
+        if (!played) PlaySpellFx(e[12], unitTarget ? ProjTargetPos(tgt) ?? point : point);
+    }
+
+    // Dota's stun stars over stunned heroes, the level-up burst when a hero levels up
+    private readonly Dictionary<string, Proj> _stunFx = new();
+    private readonly Dictionary<string, int> _heroLevelSeen = new();
+    private void UpdateHeroFx()
+    {
+        foreach (var id in _stunFx.Keys.ToList())
+            if (!_heroes.TryGetValue(id, out var h0) || !h0.Alive || h0.Act != "stun" || !h0.Visible)
+            {
+                var sp = _stunFx[id];
+                if (sp.Fx.IsValid) sp.Fx.Remove();
+                if (sp.Helper != null && sp.Helper.IsValid) sp.Helper.Remove();
+                _stunFx.Remove(id);
+            }
+        foreach (var h in _heroes.Values)
+        {
+            var head = new Vector(h.X, h.Y, HeroFeetZ(h) + HeroCyl(h).Top + 10);
+            if (h.Alive && h.Visible && h.Act == "stun" && AbilityFx.TryGetValue("@stun", out var st) && HasDotaFx(st[0].Fx))
+            {
+                if (!_stunFx.TryGetValue(h.Id, out var p) || !p.Fx.IsValid)
+                {
+                    var np = SpawnDotaFx(st[0].Fx, head, head, -1, null);
+                    if (np != null) _stunFx[h.Id] = np;
+                }
+                else p.Fx.Teleport(head, null, null);
+            }
+            if (_heroLevelSeen.TryGetValue(h.Id, out var lv) && h.Level > lv && h.Visible && AbilityFx.TryGetValue("@levelup", out var lu) && HasDotaFx(lu[0].Fx))
+            {
+                var p = SpawnDotaFx(lu[0].Fx, new Vector(h.X, h.Y, HeroFeetZ(h)), new Vector(h.X, h.Y, HeroFeetZ(h)), -1, null);
+                if (p != null) { p.Arrived = true; p.RemoveAt = Server.CurrentTime + 4f; _projs.Add(p); }
+            }
+            _heroLevelSeen[h.Id] = h.Level;
+        }
+    }
 
     // where a Dota target is right now (chest height): p<slot> = CS player, e<entindex> = hero / unit / building
     private Vector? ProjTargetPos(string t)
@@ -80,7 +179,11 @@ public partial class DotaCSBridge
         _projs.Add(p);
     }
 
-    private Proj? SpawnDotaFx(string effect, Vector at, Vector? cp1, float cp2x)
+    private Proj? SpawnDotaFx(string effect, Vector at, Vector? cp1, float cp2x) =>
+        SpawnDotaFx(effect, at, cp1, cp2x > 0 ? 2 : -1, cp2x > 0 ? new Vector(cp2x, 0, 0) : null);
+
+    // CP0 = at; CP1 = a helper entity at cp1 (moved later for moving targets); dataCp = one more control point given as a value
+    private Proj? SpawnDotaFx(string effect, Vector at, Vector? cp1, int dataCp, Vector? dataVal)
     {
         try
         {
@@ -95,7 +198,7 @@ public partial class DotaCSBridge
             fx.EffectName = effect;
             fx.StartActive = true;
             if (helper != null) fx.ControlPointEnts[1].Raw = helper.EntityHandle.Raw;
-            if (cp2x > 0) { fx.DataCP = 2; fx.DataCPValue.X = cp2x; fx.DataCPValue.Y = 0; fx.DataCPValue.Z = 0; }
+            if (dataCp >= 0 && dataVal != null) { fx.DataCP = dataCp; fx.DataCPValue.X = dataVal.X; fx.DataCPValue.Y = dataVal.Y; fx.DataCPValue.Z = dataVal.Z; }
             fx.DispatchSpawn();
             fx.Teleport(at, null, null);
             fx.AcceptInput("Start");

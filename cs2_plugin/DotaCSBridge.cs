@@ -162,6 +162,7 @@ public partial class DotaCSBridge : BasePlugin
             UpdateHpBars(); Diag("UpdateHpBars");
             UpdateRunes(); Diag("UpdateRunes");
             UpdateProgress(); Diag("UpdateProgress");
+            UpdateHeroFx(); Diag("UpdateHeroFx");
         }
         catch (Exception e)
         {
@@ -595,6 +596,7 @@ public partial class DotaCSBridge : BasePlugin
         if (e.Length >= 3 && e[1] == "SHARD") { OnShard(e); return; }
         if (e.Length >= 4 && e[1] == "M") { OnDotaChat(e); return; }
         if (e.Length >= 8 && e[1] == "PJ") { OnDotaProjectile(e); return; }
+        if (e.Length >= 13 && e[1] == "AB") { OnDotaAbility(e); return; }
         if (e.Length >= 6 && e[1] == "PFX") { OnDotaSpellFx(e); return; }
         if (e.Length >= 6 && e[1] == "FX") { PlaySpellFx(e[2], new Vector(F(e[3]), F(e[4]), F(e[5]) + 20)); return; }
         if (e.Length >= 4 && e[1] == "K")
