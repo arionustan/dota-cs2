@@ -72,7 +72,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if self.path.startswith("/dota"):
             with lock:
-                state["heroes"] = [l for l in lines if l.startswith(("H ", "U ", "N "))]   # N: day/night
+                state["heroes"] = [l for l in lines if l.startswith(("H ", "U ", "N ", "W "))]   # N: day/night, W: runes
                 state["buildings"] = [l for l in lines if l.startswith("B ")] or state.get("buildings", [])
                 cmds = [l for l in lines if l.startswith("C ") or l.startswith("E ")]
                 state["to_cs"] += cmds

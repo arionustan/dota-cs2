@@ -43,7 +43,7 @@ def build(n, vmdls, matdir, keys, outbase):
     meshtxt=''
     for m in meshes:
         src=G+'/'+m; dst=os.path.basename(m); shutil.copy(src,od+'/'+dst)
-        meshtxt+='{\n_class = "RenderMeshFile"\nfilename = "%s%s"\nimport_translation = [ 0.0, 0.0, 0.0 ]\nimport_rotation = [ 0.0, 0.0, 0.0 ]\nimport_scale = 0.314961\nalign_origin_x_type = "None"\nalign_origin_y_type = "None"\nalign_origin_z_type = "None"\nparent_bone = ""\nimport_filter = \n{\nexclude_by_default = false\nexception_list = [  ]\n}\n},\n'%(outbase,dst)
+        meshtxt+='{\n_class = "RenderMeshFile"\nfilename = "%s%s"\nimport_translation = [ 0.0, 0.0, 0.0 ]\nimport_rotation = [ 0.0, 0.0, 0.0 ]\nimport_scale = 1.0\nalign_origin_x_type = "None"\nalign_origin_y_type = "None"\nalign_origin_z_type = "None"\nparent_bone = ""\nimport_filter = \n{\nexclude_by_default = false\nexception_list = [  ]\n}\n},\n'%(outbase,dst)
         for mp in mtl_paths(src):
             mp=mp.decode()
             if mp in seen: continue

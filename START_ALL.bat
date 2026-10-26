@@ -87,6 +87,15 @@ if not exist "%CONT%\particles\_v1.txt" (
   for /r "%CONT%\particles" %%F in (*.vpcf) do "%RC%" -i "%%F" >nul 2>&1
   echo 1> "%CONT%\particles\_v1.txt"
 )
+rem Creep and hero models were imported at 0.315 scale while their animations are full size, which squashed
+rem heads and stretched limbs. Fix the source models once and compile them again (Pudge was already right).
+if not exist "%CONT%\models\_scale1.txt" (
+  echo Fixing creep and hero model scale, recompiling them takes a few minutes...
+  powershell -NoProfile -Command "Get-ChildItem -Recurse -Filter *.vmdl -Path '%CONT%\models\dota_units','%CONT%\models\dota_heroes' | ForEach-Object { $t = [IO.File]::ReadAllText($_.FullName); if ($t.Contains('import_scale = 0.314961')) { [IO.File]::WriteAllText($_.FullName, $t.Replace('import_scale = 0.314961','import_scale = 1.0')) } }"
+  if exist "%CSA%\models\dota_units" rmdir /s /q "%CSA%\models\dota_units"
+  if exist "%CSA%\models\dota_heroes" rmdir /s /q "%CSA%\models\dota_heroes"
+  echo 1> "%CONT%\models\_scale1.txt"
+)
 echo Compiling creep models (first time takes a few minutes)...
 for /d %%U in ("%CONT%\models\dota_units\*") do (
   if not exist "%CSA%\models\dota_units\%%~nxU\%%~nxU.vmdl_c" "%RC%" -i "%%~U\%%~nxU.vmdl" >nul 2>&1

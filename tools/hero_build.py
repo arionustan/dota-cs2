@@ -75,7 +75,7 @@ def build(unit):
     for m in meshes:
         dst = os.path.basename(m); shutil.copy(G + '/' + m, od + '/' + dst)
         meshtxt += ('{\n_class = "RenderMeshFile"\nfilename = "%s%s"\nimport_translation = [ 0.0, 0.0, 0.0 ]\nimport_rotation = [ 0.0, 0.0, 0.0 ]\n'
-                    'import_scale = 0.314961\nalign_origin_x_type = "None"\nalign_origin_y_type = "None"\nalign_origin_z_type = "None"\n'
+                    'import_scale = 1.0\nalign_origin_x_type = "None"\nalign_origin_y_type = "None"\nalign_origin_z_type = "None"\n'
                     'parent_bone = ""\nimport_filter = \n{\nexclude_by_default = false\nexception_list = [  ]\n}\n},\n') % (rel, dst)
         for mp in D.mtl_paths(G + '/' + m):
             mp = mp.decode()

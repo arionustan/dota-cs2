@@ -70,7 +70,7 @@ public partial class DotaCSBridge
         lock (_relayLock)
         {
             var now = DateTime.UtcNow;
-            _rHeroes = lines.Where(l => l.StartsWith("H ") || l.StartsWith("U ") || l.StartsWith("N ")).ToList();
+            _rHeroes = lines.Where(l => l.StartsWith("H ") || l.StartsWith("U ") || l.StartsWith("N ") || l.StartsWith("W ")).ToList();
             var b = lines.Where(l => l.StartsWith("B ")).ToList();
             if (b.Count > 0) _rBuildings = b;
             _rToCs.AddRange(lines.Where(l => l.StartsWith("C ") || l.StartsWith("E ")));

@@ -264,6 +264,7 @@ public partial class DotaCSBridge : BasePlugin
         foreach (var raw in latest.Split('\n'))
             if (raw.StartsWith("N ")) SetNight(raw.Trim() == "N 1");
         ParseUnits(latest);
+        ParseRunes(latest);
         ParseBuildings(latest);
 
         foreach (var cmd in commands)

@@ -36,8 +36,33 @@ public partial class DotaCSBridge
     private const float WisdomRuneEvery = 420f;   // Dota: every 7 minutes
     private const float PowerRuneEvery = 90f, BountyRuneEvery = 120f, RuneTouch = 85f;
 
-    private class RuneProp { public RuneKind Kind = null!; public CDynamicProp? Prop; public COmniLight? Light; public CPointWorldText? Label; }
-    private readonly Dictionary<int, RuneProp> _runes = new();
+    private class RuneProp { public Vector Pos = new(0, 0, 0); public RuneKind Kind = null!; public CDynamicProp? Prop; public COmniLight? Light; public CPointWorldText? Label; }
+    private readonly Dictionary<string, RuneProp> _runes = new();
+    private readonly Dictionary<string, float> _runeTaken = new();
+    private Dictionary<string, (RuneKind Kind, Vector Pos)> _dotaRunes = new();
+    private static readonly RuneKind IllusionRune = new("haste", "Иллюзии (в КС: ускорение)", "rune_haste01", "Rune.Haste", 22f, System.Drawing.Color.FromArgb(255, 255, 230, 80), "#ffe050");
+
+    // W entindex type model x y z (Dota rune types: 0 DD, 1 haste, 2 illusion, 3 invis, 4 regen, 5 bounty, 6 arcane, 7 water, 8 wisdom, 9 shield)
+    private void ParseRunes(string text)
+    {
+        var d = new Dictionary<string, (RuneKind, Vector)>();
+        foreach (var raw in text.Split('\n'))
+        {
+            var p = raw.Trim().Split(' ');
+            if (p.Length < 7 || p[0] != "W") continue;
+            var t = (int)F(p[2]); var m = p[3];
+            RuneKind? k = t switch
+            {
+                0 => PowerRunes[1], 1 => PowerRunes[0], 2 => IllusionRune, 3 => PowerRunes[3], 4 => PowerRunes[2],
+                5 => BountyRune, 6 => PowerRunes[4], 7 => WaterRune, 8 => WisdomRune, 9 => PowerRunes[5], _ => null,
+            };
+            k ??= m.Contains("double") ? PowerRunes[1] : m.Contains("haste") ? PowerRunes[0] : m.Contains("illusion") ? IllusionRune
+                : m.Contains("invis") ? PowerRunes[3] : m.Contains("regen") ? PowerRunes[2] : m.Contains("arcane") ? PowerRunes[4]
+                : m.Contains("water") ? WaterRune : m.Contains("shield") ? PowerRunes[5] : m.Contains("xp") || m.Contains("wisdom") ? WisdomRune : BountyRune;
+            d[p[1]] = (k, new Vector(F(p[4]), F(p[5]), F(p[6])));
+        }
+        _dotaRunes = d;
+    }
     private readonly Dictionary<int, float> _runeNext = new();
     private readonly Dictionary<(int Slot, string Id), float> _runeUntil = new();
     private float _runeHudNext;
@@ -62,20 +87,19 @@ public partial class DotaCSBridge
         var now = Server.CurrentTime;
         var humans = Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot && p.PawnIsAlive && p.PlayerPawn.Value != null && !IsHolding(p.Slot)).ToList();
 
-        for (var i = 0; i < RuneSpots.Length; i++)
+        // runes are the real Dota runes (W lines): show new ones, drop the ones taken in Dota
+        var wanted = _dotaRunes;
+        foreach (var id in _runes.Keys.ToList())
+            if (!wanted.ContainsKey(id)) RemoveRune(id);
+        foreach (var (id, w) in wanted)
         {
-            var s = RuneSpots[i];
-            if (!_runes.ContainsKey(i))
-            {
-                if (!_runeNext.TryGetValue(i, out var at)) _runeNext[i] = at = now + (s.Type == 'w' ? WisdomRuneEvery : 5f);
-                if (now >= at) SpawnRune(i, s.Type == 'p' ? (Rng.Next(8) == 0 ? WaterRune : PowerRunes[Rng.Next(PowerRunes.Length)]) : s.Type == 'w' ? WisdomRune : BountyRune);
-                continue;
-            }
+            if (_runeTaken.TryGetValue(id, out var tk) && now - tk < 3f) continue;   // taken here, Dota removes it shortly
+            if (!_runes.ContainsKey(id)) SpawnRune(id, w.Kind, w.Pos);
             foreach (var p in humans)
             {
                 var o = p.PlayerPawn.Value!.AbsOrigin;
-                if (o == null || Dist2(s.X, s.Y, o) > RuneTouch || Math.Abs(o.Z - s.Z) > 100) continue;
-                PickRune(p, i);
+                if (o == null || Dist2(w.Pos.X, w.Pos.Y, o) > RuneTouch || Math.Abs(o.Z - w.Pos.Z) > 120) continue;
+                PickRune(p, id);
                 break;
             }
         }
@@ -112,10 +136,10 @@ public partial class DotaCSBridge
         UpdateLotus(humans);
     }
 
-    private void SpawnRune(int i, RuneKind kind)
+    private void SpawnRune(string id, RuneKind kind, Vector at)
     {
-        var s = RuneSpots[i];
-        var r = new RuneProp { Kind = kind };
+        var s = (X: at.X, Y: at.Y, Z: at.Z);
+        var r = new RuneProp { Kind = kind, Pos = at };
         try
         {
             var prop = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
@@ -162,19 +186,26 @@ public partial class DotaCSBridge
             }
         }
         catch (Exception e) { Logger.LogWarning("DotaCS rune: {Error}", e.Message); }
-        _runes[i] = r;
-        if (s.Type != 'b') Announce($" {ChatColors.Gold}Появилась руна:{ChatColors.Default} {kind.Name}");
+        _runes[id] = r;
+        if (kind.Id != "bounty") Announce($" {ChatColors.Gold}Появилась руна:{ChatColors.Default} {kind.Name}");
     }
 
-    private void PickRune(CCSPlayerController p, int i)
+    private void RemoveRune(string id)
     {
-        var r = _runes[i];
-        _runes.Remove(i);
+        if (!_runes.TryGetValue(id, out var r)) return;
+        _runes.Remove(id);
         if (r.Prop != null && r.Prop.IsValid) r.Prop.Remove();
         if (r.Light != null && r.Light.IsValid) r.Light.Remove();
         if (r.Label != null && r.Label.IsValid) r.Label.Remove();
-        var s = RuneSpots[i];
-        _runeNext[i] = Server.CurrentTime + (s.Type == 'p' ? PowerRuneEvery : s.Type == 'w' ? WisdomRuneEvery : BountyRuneEvery);
+    }
+
+    private void PickRune(CCSPlayerController p, string id)
+    {
+        var r = _runes[id];
+        var s = (X: r.Pos.X, Y: r.Pos.Y, Z: r.Pos.Z);
+        RemoveRune(id);
+        _runeTaken[id] = Server.CurrentTime;
+        _hits.Enqueue(string.Format(Inv, "G rune {0:F0} {1:F0} {2:F0} {3}", s.X, s.Y, s.Z, p.Slot));
         var pawn = p.PlayerPawn.Value!;
         var k = r.Kind;
         PlayDotaSound(k.Sound, new Vector(s.X, s.Y, s.Z + 40));

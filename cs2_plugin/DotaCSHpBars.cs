@@ -61,9 +61,10 @@ public partial class DotaCSBridge
             var near = players.OrderBy(p => (p.X - w.Pos.X) * (p.X - w.Pos.X) + (p.Y - w.Pos.Y) * (p.Y - w.Pos.Y)).First();
             var yawTo = (float)(Math.Atan2(near.Y - w.Pos.Y, near.X - w.Pos.X) * 180 / Math.PI);
             var ang = new QAngle(0, yawTo + 90 + (_hpFlip ? 180 : 0), 90);
-            HpText(id, new string('█', filled) + new string('▁', segs - filled), w.Pos, ang, color, w.Hero ? 90 : 70, 0.2f, true);
-            HpText(id + "#", $"{Math.Max(0, w.Hp)} / {w.Max}", new Vector(w.Pos.X, w.Pos.Y, w.Pos.Z - (w.Hero ? 24 : 18)), ang,
-                System.Drawing.Color.FromArgb(255, 255, 255, 255), w.Hero ? 64 : 50, 0.2f, false);
+            // a thin Dota-like strip (the block glyph is ~1.6 em wide): hero ~140 units, creep ~80 units wide
+            HpText(id, new string('█', filled) + new string('░', segs - filled), w.Pos, ang, color, 40, w.Hero ? 0.155f : 0.125f, false);
+            HpText(id + "#", $"{Math.Max(0, w.Hp)} / {w.Max}", new Vector(w.Pos.X, w.Pos.Y, w.Pos.Z + (w.Hero ? 11 : 9)), ang,
+                System.Drawing.Color.FromArgb(255, 255, 255, 255), 40, w.Hero ? 0.2f : 0.16f, false);
         }
     }
 

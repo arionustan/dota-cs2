@@ -203,6 +203,17 @@ function CDotaCS:BridgeTick(bridge)
     local lines = self:BridgeHeroLines()
     for _, l in ipairs(self:BridgeUnitLines(bridge)) do table.insert(lines, l) end
     table.insert(lines, GameRules:IsDaytime() and "N 0" or "N 1")   -- day/night for CS2
+    -- runes lying on the Dota map right now (W entindex type model x y z), CS2 shows exactly these
+    for _, r in pairs(Entities:FindAllByClassname("dota_item_rune")) do
+        if r and not r:IsNull() then
+            local p = r:GetAbsOrigin()
+            local x, y = ToCS(p)
+            local t = -1
+            if r.GetRuneType then local ok, v = pcall(function() return r:GetRuneType() end) if ok and v then t = v end end
+            local m = (r.GetModelName and r:GetModelName() or ""):match("([^/]+)%.vmdl$") or "-"
+            table.insert(lines, string.format("W %d %d %s %.0f %.0f %.0f", r:entindex(), t, m, x, y, p.z))
+        end
+    end
     bridge.buildTick = ((bridge.buildTick or 0) + 1) % 10
     if bridge.buildTick == 0 then
         for _, l in ipairs(self:BridgeBuildingLines()) do table.insert(lines, l) end
@@ -394,7 +405,9 @@ function CDotaCS:BridgeUpdateProxy(bridge, slot, x, y, fx, fy, hp, name)
     end
     unit.csGoal = goal
     unit.csGoalTime = now
+    -- the CS2 CT model in Dota is built facing +Y, so turn the view direction by -90 degrees for it
     local dir = Vector(fx, fy, 0)
+    if unit:GetUnitName() == "npc_cs_proxy" then dir = Vector(fy, -fx, 0) end
     if dir:Length2D() > 0.1 then unit.csFace = dir:Normalized() end
     if not unit.csSmoothing then
         unit.csSmoothing = true
@@ -567,6 +580,14 @@ function CDotaCS:BridgeGrenade(bridge, kind, x, y, z, slot)
             pcall(function() ward:AddNewModifier(owner, nil, "modifier_item_buff_ward", { duration = 360 }) end)
             EmitSoundOnLocationWithCaster(pos, "DOTA_Item.ObserverWard.Activate", owner)
         end
+    elseif kind == "rune" then
+        -- a CS player took a rune in CS2: it is gone in Dota too
+        local best, bd = nil, 250
+        for _, r in pairs(Entities:FindAllByClassname("dota_item_rune")) do
+            local d = (r:GetAbsOrigin() - pos):Length2D()
+            if d < bd then best, bd = r, d end
+        end
+        if best then UTIL_Remove(best) end
     elseif kind == "capture" then
         -- CS player captured an outpost or a watcher: it now gives vision to the CS team
         for _, e in ipairs(Entities:FindAllInSphere(pos, 450)) do
